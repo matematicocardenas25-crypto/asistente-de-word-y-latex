@@ -7,80 +7,78 @@ import matplotlib.pyplot as plt
 import numpy as np
 import io
 
-# Configuración inicial para evitar errores de renderizado
+# Configuración de página para evitar errores de carga
 st.set_page_config(page_title="Generador Académico", layout="centered")
 
-st.title("🎓 Sistema de Proyectos de Cálculo")
-st.markdown("Genera documentos Word y LaTeX con IA y gráficas.")
+st.title("🎓 Sistema de Proyectos: Word + LaTeX")
 
-# --- DATOS DEL PROYECTO ---
+# --- ENTRADA DE DATOS ---
 with st.sidebar:
     st.header("Configuración")
-    titulo = st.text_input("Título del Proyecto", "Análisis Matemático")
+    titulo = st.text_input("Título del Proyecto", "Mi Proyecto de Cálculo")
     autor = st.text_input("Nombre del Autor", "Tu Nombre")
-    st.info("Sube 'perfil.png' a tu GitHub para que aparezca tu foto.")
+    st.info("Sube 'perfil.png' a GitHub para incluir tu foto.")
 
 # --- PROCESAMIENTO ---
-col1, col2 = st.columns(2)
+uploaded_file = st.file_uploader("Sube la imagen del libro", type=["png", "jpg", "jpeg"])
+latex_code = ""
 
-with col1:
-    st.subheader("1. Imagen a LaTeX")
-    uploaded_file = st.file_uploader("Sube tu fórmula", type=["png", "jpg", "jpeg"])
-    latex_res = ""
-    if uploaded_file:
-        img = Image.open(uploaded_file)
-        st.image(img, width=250)
-        with st.spinner("Leyendo..."):
-            model = LatexOCR()
-            latex_res = model(img)
-        st.latex(latex_res)
+if uploaded_file:
+    img = Image.open(uploaded_file)
+    st.image(img, caption="Imagen cargada", width=300)
+    with st.spinner("IA convirtiendo a LaTeX..."):
+        model = LatexOCR()
+        latex_code = model(img)
+    st.latex(latex_code)
 
-with col2:
-    st.subheader("2. Gráfica")
-    func_input = st.text_input("Función (ej: x**2)", "x**2")
-    x = np.linspace(-10, 10, 100)
-    try:
-        y = eval(func_input.replace('^', '**'))
-        fig, ax = plt.subplots(figsize=(5,3))
-        ax.plot(x, y, color='red')
-        ax.grid(True)
-        st.pyplot(fig)
-        
-        # Buffer para imágenes
-        buf_graf = io.BytesIO()
-        fig.savefig(buf_graf, format='png')
-        buf_graf.seek(0)
-    except:
-        st.error("Revisa la función")
+# --- GRÁFICA ---
+st.subheader("Gráfica Automática")
+func_input = st.text_input("Escribe la función (ej: x**2)", "x**2")
+x = np.linspace(-10, 10, 100)
+try:
+    y = eval(func_input.replace('^', '**'))
+    fig, ax = plt.subplots(figsize=(6, 3))
+    ax.plot(x, y, color='blue', label=f"f(x)={func_input}")
+    ax.grid(True)
+    st.pyplot(fig)
+    
+    # Guardar gráfica para los archivos
+    buf_grafica = io.BytesIO()
+    fig.savefig(buf_grafica, format='png')
+    buf_grafica.seek(0)
+except:
+    st.error("Error en la función matemática.")
 
-# --- GENERADOR DE ARCHIVOS ---
-if st.button("🚀 Generar Todo (Word y LaTeX)"):
-    # Lógica de textos automáticos
-    intro = f"Este trabajo presenta un análisis sobre {titulo}, elaborado por {autor}."
-    conclu = "Se concluye que el uso de IA facilita la transcripción de fórmulas complejas."
-    recom = "Se recomienda verificar los resultados gráficos con métodos analíticos."
+# --- GENERAR DOCUMENTOS ---
+if st.button("🚀 Preparar Descargas (Word y LaTeX)"):
+    # Textos automáticos
+    intro = f"Este documento sobre {titulo} ha sido generado por {autor}. Integra OCR y gráficas."
+    conclu = "Se concluye que la automatización mejora la precisión en documentos técnicos."
+    recom = "Se recomienda revisar la sintaxis de las funciones antes de exportar."
 
-    # CREAR WORD
+    # 1. GENERAR WORD
     doc = Document()
     doc.add_heading(titulo, 0)
     doc.add_paragraph(f"Autor: {autor}")
     try:
         doc.add_picture('perfil.png', width=Inches(1.5))
     except:
-        pass
+        pass # Si no hay foto, sigue adelante
     
     doc.add_heading('Introducción', 1); doc.add_paragraph(intro)
-    doc.add_heading('Fórmula', 1); doc.add_paragraph(latex_res)
-    doc.add_picture(buf_graf, width=Inches(4))
-    doc.add_heading('Conclusión', 1); doc.add_paragraph(conclu)
-    doc.add_heading('Recomendación', 1); doc.add_paragraph(recom)
+    doc.add_heading('Fórmula y Gráfica', 1)
+    doc.add_paragraph(f"Fórmula: {latex_code}")
+    doc.add_picture(buf_grafica, width=Inches(5))
+    doc.add_heading('Conclusiones', 1); doc.add_paragraph(conclu)
+    doc.add_heading('Recomendaciones', 1); doc.add_paragraph(recom)
 
-    word_io = io.BytesIO()
-    doc.save(word_io)
-    word_io.seek(0)
-    
-    # CREAR LATEX
-    latex_file = f"\\documentclass{{article}}\n\\title{{{titulo}}}\n\\author{{{autor}}}\n\\begin{{document}}\n\\maketitle\n\\section{{Intro}}\n{intro}\n\\section{{Formula}}\n${latex_res}$\n\\end{{document}}"
+    word_buf = io.BytesIO()
+    doc.save(word_buf)
+    word_buf.seek(0)
 
-    st.download_button("⬇️ Descargar Word", word_io, "proyecto.docx")
-    st.download_button("⬇️ Descargar LaTeX", latex_file, "proyecto.tex")
+    # 2. GENERAR LATEX
+    latex_content = f"\\documentclass{{article}}\n\\title{{{titulo}}}\n\\author{{{autor}}}\n\\begin{{document}}\n\\maketitle\n\\section{{Introducción}}\n{intro}\n\\section{{Fórmula}}\n${latex_code}$\n\\end{{document}}"
+
+    # Botones de descarga
+    st.download_button("⬇️ Descargar Word (.docx)", word_buf, f"{titulo}.docx")
+    st.download_button("⬇️ Descargar LaTeX (.tex)", latex_content, f"{titulo}.tex")
