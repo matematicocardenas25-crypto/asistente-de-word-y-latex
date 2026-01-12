@@ -12,6 +12,7 @@ st.set_page_config(page_title="Calculo Pro: Compilador de Élite", layout="wide"
 
 def hacer_circulo(imagen_path):
     try:
+        # Procesamiento de imagen para perfil ovalado/circular
         img = Image.open(imagen_path).convert("RGBA")
         ancho, alto = img.size
         min_dim = min(ancho, alto)
@@ -25,18 +26,19 @@ def hacer_circulo(imagen_path):
         resultado.save(buf, format="PNG")
         buf.seek(0)
         return buf
-    except: return None
+    except: 
+        return None
 
 # --- BARRA LATERAL ---
 with st.sidebar:
     st.header("📋 Configuración Profesional")
     titulo = st.text_input("Título del Proyecto", "Análisis de Funciones y Cálculo Diferencial")
     autor = st.text_input("Autor", "Ismael Antonio Cárdenas, Lic. en Matemáticas, UNAN-León")
-    st.info("Sistema diseñado para la producción de contenidos educativos de alta rentabilidad.")
+    st.info("Asegúrate de tener el archivo 'perfil.jpeg' en la carpeta para el encabezado circular.")
 
 st.title("🎓 Sistema de Producción Científica Avanzada")
 
-# --- LÓGICA DE TEXTOS CIENTÍFICOS (Automatización Elegante) ---
+# --- LÓGICA DE TEXTOS CIENTÍFICOS (Automatización Elegante y Tildes Preservadas) ---
 intro_formal = f"El presente compendio técnico, enfocado en '{titulo}', constituye una sistematización rigurosa de los fundamentos analíticos de las ciencias exactas. Bajo la autoría del {autor}, este documento articula la abstracción algebraica con la fenomenología visual, garantizando un rigor deductivo en la transición de la abstracción analítica a la representación digital."
 conclu_formal = f"Tras el estudio exhaustivo de '{titulo}', se establece que la convergencia entre el cálculo simbólico y la visualización paramétrica permite una comprensión holística de los puntos críticos y el comportamiento de las funciones. Esta integración técnica eleva la calidad del análisis pedagógico contemporáneo."
 recom_formal = f"Se insta al investigador a realizar un contraste crítico entre la resolución analítica manual y la verificación computacional presentada en este análisis de '{titulo}'. Para optimizar el aprendizaje, se recomienda un contraste dialéctico entre los algoritmos computacionales y los métodos de demostración clásica."
@@ -47,7 +49,7 @@ col_in, col_pre = st.columns([1, 1.2])
 with col_in:
     st.subheader("📥 Insumos de Contenido")
     
-    # 1. Cuerpo Teórico
+    # 1. Cuerpo Teórico (Copiar/Pegar)
     texto_teoria = st.text_area("✍️ Texto para Teoría (Copiar/Pegar):", "Inserte aquí el fundamento teórico o descripción del tema...")
     
     # 2. OCR Matemático
@@ -61,7 +63,7 @@ with col_in:
     # 3. Gráfica Vectorizada
     st.markdown("---")
     st.subheader("📈 Gráfica Profesional")
-    func_in = st.text_input("Función detectada (ej: np.cos(x)):", "x**2")
+    func_in = st.text_input("Función detectada (ej: x**2 - 2*x):", "x**2")
     buf_graf = io.BytesIO()
     try:
         x_v = np.linspace(-7, 7, 500)
@@ -71,13 +73,14 @@ with col_in:
         ax.axhline(0, color='black', lw=1); ax.axvline(0, color='black', lw=1)
         ax.grid(True, linestyle='--', alpha=0.6)
         fig.savefig(buf_graf, format='png'); buf_graf.seek(0)
-    except: pass
+    except: 
+        pass
 
-    # 4. Sección de Ejercicios Propuestos (NUEVA MEJORA)
+    # 4. Sección de Ejercicios Propuestos
     st.markdown("---")
     st.subheader("📝 Sección de Ejercicios")
-    texto_ejercicios = st.text_area("✍️ Enunciados de Ejercicios (Copiar/Pegar):", "1. Calcule la derivada... \n2. Encuentre el área...")
-    imgs_ejercicios = st.file_uploader("🖼️ Capturas de Ejercicios/Apoyo", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    texto_ejercicios = st.text_area("✍️ Enunciados de Ejercicios (Copiar/Pegar):", "1. Determine el dominio...\n2. Analice la continuidad...")
+    imgs_ejercicios = st.file_uploader("🖼️ Capturas de Apoyo", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
     list_img_buf = [io.BytesIO(f.getvalue()) for f in imgs_ejercicios] if imgs_ejercicios else []
 
 with col_pre:
@@ -89,27 +92,34 @@ with col_pre:
         if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf, caption="Gráfica Vectorizada")
         if latex_res: st.latex(latex_res)
         st.markdown("---")
-        st.write(f"**Propuestos:** {texto_ejercicios}")
+        st.write(f"**Ejercicios:** {texto_ejercicios}")
 
 # --- COMPILACIÓN FINAL ---
 if st.button("🚀 Compilar Documentos Profesionales"):
     # --- WORD ---
     doc = Document()
+    
+    # Inserción de la Imagen de Perfil Circular
     f_circ = hacer_circulo('perfil.jpeg')
     if f_circ:
-        header = doc.sections[0].first_page_header
-        header.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        header.paragraphs[0].add_run().add_picture(f_circ, width=Inches(1.1))
+        section = doc.sections[0]
+        header = section.header
+        header_para = header.paragraphs[0]
+        header_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        run = header_para.add_run()
+        run.add_picture(f_circ, width=Inches(1.1))
     
     doc.add_heading(titulo, 0)
     doc.add_heading('Introducción Formal', 1); doc.add_paragraph(intro_formal)
     doc.add_heading('Desarrollo Teórico', 1); doc.add_paragraph(texto_teoria)
     doc.add_heading('Análisis Simbólico', 1); doc.add_paragraph(latex_res)
-    doc.add_picture(buf_graf, width=Inches(4.5))
+    if buf_graf.getbuffer().nbytes > 0:
+        doc.add_picture(buf_graf, width=Inches(4.5))
     
     doc.add_heading('Ejercicios de Consolidación', 1)
     doc.add_paragraph(texto_ejercicios)
-    for b in list_img_buf: doc.add_picture(b, width=Inches(3.5))
+    for b in list_img_buf: 
+        doc.add_picture(b, width=Inches(3.5))
     
     doc.add_heading('Conclusiones Académicas', 1); doc.add_paragraph(conclu_formal)
     doc.add_heading('Recomendaciones Metodológicas', 1); doc.add_paragraph(recom_formal)
@@ -141,4 +151,4 @@ if st.button("🚀 Compilar Documentos Profesionales"):
 
     st.download_button("⬇️ Descargar Word Premium", w_io, f"{titulo}.docx")
     st.download_button("⬇️ Descargar LaTeX Científico", latex_str, f"{titulo}.tex")
-    st.success("¡Documentos de alta calidad generados!")
+    st.success("¡Documentos con perfil circular y rigor científico generados!")
