@@ -37,7 +37,7 @@ with st.sidebar:
     autor = st.text_input("Autor del Proyecto", autor_predeterminado)
     st.info("Sube 'perfil.jpeg' a tu GitHub.")
 
-st.title("🎓 Sistema Educativo: Generación de Guías Premium")
+st.title("🎓 Sistema Educativo: Generación de Guías con Bibliografía APA")
 
 # --- SECCIÓN PRINCIPAL: OCR Y GRÁFICA ---
 col1, col2 = st.columns(2)
@@ -71,17 +71,17 @@ with col2:
     except:
         st.error("Error en la función.")
 
-# --- SECCIÓN: EJERCICIOS PROPUESTOS ---
+# --- SECCIÓN: EJERCICIOS PROPUESTOS Y DETECCIÓN DE FUENTES ---
 st.divider()
-st.header("📝 3. Sección de Ejercicios Propuestos")
+st.header("📝 3. Sección de Ejercicios y Referencias")
 col_text, col_img = st.columns(2)
 
 with col_text:
-    texto_ejercicios = st.text_area("Escribe los enunciados de los ejercicios (uno por línea):", 
-                                    "1. Calcule la derivada de la función anterior.\n2. Determine los puntos críticos.\n3. Evalúe el límite cuando x tiende a cero.")
+    texto_ejercicios = st.text_area("Enunciados (Escribe 'Fuente: Stewart' para citar automáticamente):", 
+                                    "1. Calcule la derivada según Stewart.\n2. Determine puntos críticos (Fuente: Larson).")
 
 with col_img:
-    img_ejercicios = st.file_uploader("O sube capturas de ejercicios propuestos", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    img_ejercicios = st.file_uploader("Sube capturas de ejercicios", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
     list_img_buf = []
     if img_ejercicios:
         for file in img_ejercicios:
@@ -91,11 +91,30 @@ with col_img:
             list_img_buf.append(b)
 
 # --- BOTÓN DE GENERACIÓN ---
-if st.button("🚀 Generar Material Educativo Completo"):
-    # LÓGICA DE TEXTOS AUTOMATIZADOS Y ELEGANTES
-    intro = f"El presente compendio académico, titulado '{titulo}', representa una síntesis técnica y pedagógica diseñada rigurosamente por el {autor}. En este documento se explora la intersección entre la teoría abstracta y la representación computacional, proporcionando al estudiante un marco conceptual sólido para el dominio del tema en cuestión."
-    conclu = f"Tras el análisis exhaustivo de '{titulo}', se concluye que la integración de herramientas de visualización dinámica y digitalización de sintaxis matemática no solo optimiza el tiempo de estudio, sino que refuerza la intuición geométrica necesaria para la resolución de problemas complejos en el ámbito de las ciencias exactas."
-    recom = f"Para un aprovechamiento integral de esta guía de '{titulo}', se recomienda al lector realizar un contraste analítico entre los resultados obtenidos manualmente y las gráficas generadas. Asimismo, se insta a abordar los ejercicios propuestos como un desafío intelectual para consolidar el pensamiento lógico-matemático."
+if st.button("🚀 Generar Material Educativo con Bibliografía"):
+    # LÓGICA DE BIBLIOGRAFÍA AUTOMÁTICA
+    fuentes_db = {
+        "stewart": "Stewart, J. (2015). Cálculo de una variable: Trascendentes tempranas. Cengage Learning.",
+        "larson": "Larson, R., & Edwards, B. H. (2017). Cálculo (11a ed.). Cengage Learning.",
+        "leithold": "Leithold, L. (1998). El Cálculo (7a ed.). Oxford University Press.",
+        "piskunov": "Piskunov, N. (1977). Cálculo Diferencial e Integral. Editorial Mir.",
+        "spivak": "Spivak, M. (2006). Calculus (3ra ed.). Reverté."
+    }
+    
+    bibliografia_detectada = []
+    texto_minus = texto_ejercicios.lower()
+    for clave, cita in fuentes_db.items():
+        if clave in texto_minus:
+            bibliografia_detectada.append(cita)
+    
+    # Si no detecta nada, poner una base
+    if not bibliografia_detectada:
+        bibliografia_detectada.append("Recursos digitales generados mediante Asistente de IA Matemática.")
+
+    # TEXTOS ELEGANTES
+    intro = f"El presente compendio académico, titulado '{titulo}', representa una síntesis técnica diseñada por el {autor}."
+    conclu = f"Tras el análisis exhaustivo de '{titulo}', se concluye que la visualización dinámica refuerza la intuición geométrica."
+    recom = f"Se recomienda realizar un contraste analítico entre los resultados manuales y las gráficas generadas."
 
     # --- WORD ---
     doc = Document()
@@ -107,25 +126,31 @@ if st.button("🚀 Generar Material Educativo Completo"):
     if f_circ: p_h.add_run().add_picture(f_circ, width=Inches(1.2))
     
     doc.add_heading(titulo, 0)
-    p_aut = doc.add_paragraph(f"Elaborado por: {autor}")
-    p_aut.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
+    doc.add_paragraph(f"Elaborado por: {autor}").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_heading('Introducción', 1); doc.add_paragraph(intro)
-    doc.add_heading('Ejercicio de Aplicación', 1)
-    doc.add_paragraph(f"Modelado Matemático (OCR):").bold = True
-    doc.add_paragraph(latex_res)
+    doc.add_heading('Desarrollo Matemático', 1); doc.add_paragraph(latex_res)
     doc.add_picture(buf_graf, width=Inches(5))
     
-    doc.add_heading('Ejercicios de Consolidación', 1)
+    doc.add_heading('Ejercicios Propuestos', 1)
     doc.add_paragraph(texto_ejercicios)
     for b_img in list_img_buf:
         doc.add_picture(b_img, width=Inches(4))
     
-    doc.add_heading('Conclusiones Académicas', 1); doc.add_paragraph(conclu)
-    doc.add_heading('Recomendaciones de Estudio', 1); doc.add_paragraph(recom)
+    doc.add_heading('Conclusiones', 1); doc.add_paragraph(conclu)
+    doc.add_heading('Recomendaciones', 1); doc.add_paragraph(recom)
+    
+    # BIBLIOGRAFÍA EN WORD
+    doc.add_page_break()
+    doc.add_heading('Referencias Bibliográficas (Estilo APA)', 1)
+    for cita in bibliografia_detectada:
+        p_cita = doc.add_paragraph(cita)
+        p_cita.style.font.size = Pt(10)
+
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
 
     # --- LATEX ---
+    citas_latex = "\\begin{itemize}\n" + "\n".join([f"\\item {c}" for c in bibliografia_detectada]) + "\n\\end{itemize}"
+    
     latex_file = f"""\\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage{{amsmath, graphicx, tikz}}
@@ -135,12 +160,14 @@ if st.button("🚀 Generar Material Educativo Completo"):
     \\begin{{tikzpicture}} \\clip [circle] (0,0) circle (1.5cm); \\node at (0,0) {{\\includegraphics[width=3cm]{{perfil.jpeg}}}}; \\end{{tikzpicture}}
 }};
 \\end{{tikzpicture}}
-\\title{{\\textbf{{{titulo}}}}} \\author{{Elaborado por: \\\\ {autor}}} \\date{{\\today}} \\maketitle
+\\title{{\\textbf{{{titulo}}}}} \\author{{Elaborado por: \\\\ {autor}}} \\maketitle
 \\section{{Introducción}} {intro}
-\\section{{Desarrollo Técnico}} \\noindent Expresión analizada: \\\\ \\centering $ {latex_res} $ \\\\
+\\section{{Desarrollo}} $ {latex_res} $ 
 \\section{{Ejercicios Propuestos}} {texto_ejercicios.replace('\\n', ' \\\\ ')}
 \\section{{Conclusiones}} {conclu}
-\\section{{Recomendaciones}} {recom}
+\\newpage
+\\section{{Bibliografía (APA)}}
+{citas_latex}
 \\end{{document}}"""
 
     st.download_button("⬇️ Descargar Word", w_io, f"{titulo}.docx")
