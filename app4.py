@@ -32,12 +32,12 @@ def hacer_circulo(imagen_path):
 # --- BARRA LATERAL ---
 with st.sidebar:
     st.header("📋 Configuración")
-    titulo = st.text_input("Título del Proyecto", "Guía de Ejercicios de Cálculo")
+    titulo = st.text_input("Título del Proyecto", "Análisis de Funciones y Cálculo Diferencial")
     autor_predeterminado = "Ismael Antonio Cárdenas, Licenciado en Matemáticas, UNAN-León, Nicaragua"
     autor = st.text_input("Autor del Proyecto", autor_predeterminado)
     st.info("Sube 'perfil.jpeg' a tu GitHub.")
 
-st.title("🎓 Sistema Educativo: Generación de Guías y Contenidos")
+st.title("🎓 Sistema Educativo: Generación de Guías Premium")
 
 # --- SECCIÓN PRINCIPAL: OCR Y GRÁFICA ---
 col1, col2 = st.columns(2)
@@ -60,7 +60,7 @@ with col2:
         x_vals = np.linspace(-10, 10, 1000)
         y_vals = eval(func_input.replace('^', '**'), {"x": x_vals, "np": np})
         fig, ax = plt.subplots(figsize=(6, 6))
-        ax.plot(x_vals, y_vals, color='green', linewidth=2)
+        ax.plot(x_vals, y_vals, color='blue', linewidth=2)
         ax.spines['left'].set_position('zero')
         ax.spines['bottom'].set_position('zero')
         ax.spines['right'].set_color('none')
@@ -71,7 +71,7 @@ with col2:
     except:
         st.error("Error en la función.")
 
-# --- NUEVA SECCIÓN: EJERCICIOS PROPUESTOS ---
+# --- SECCIÓN: EJERCICIOS PROPUESTOS ---
 st.divider()
 st.header("📝 3. Sección de Ejercicios Propuestos")
 col_text, col_img = st.columns(2)
@@ -92,9 +92,10 @@ with col_img:
 
 # --- BOTÓN DE GENERACIÓN ---
 if st.button("🚀 Generar Material Educativo Completo"):
-    intro = f"El presente material académico, diseñado por el {autor}, tiene como fin primordial servir de guía en el estudio de {titulo}."
-    conclu = "Se concluye que el dominio de estas herramientas permite al estudiante una transición fluida entre la teoría y la aplicación gráfica."
-    recom = "Se recomienda resolver los ejercicios propuestos utilizando métodos analíticos y verificar resultados con la gráfica adjunta."
+    # LÓGICA DE TEXTOS AUTOMATIZADOS Y ELEGANTES
+    intro = f"El presente compendio académico, titulado '{titulo}', representa una síntesis técnica y pedagógica diseñada rigurosamente por el {autor}. En este documento se explora la intersección entre la teoría abstracta y la representación computacional, proporcionando al estudiante un marco conceptual sólido para el dominio del tema en cuestión."
+    conclu = f"Tras el análisis exhaustivo de '{titulo}', se concluye que la integración de herramientas de visualización dinámica y digitalización de sintaxis matemática no solo optimiza el tiempo de estudio, sino que refuerza la intuición geométrica necesaria para la resolución de problemas complejos en el ámbito de las ciencias exactas."
+    recom = f"Para un aprovechamiento integral de esta guía de '{titulo}', se recomienda al lector realizar un contraste analítico entre los resultados obtenidos manualmente y las gráficas generadas. Asimismo, se insta a abordar los ejercicios propuestos como un desafío intelectual para consolidar el pensamiento lógico-matemático."
 
     # --- WORD ---
     doc = Document()
@@ -106,23 +107,25 @@ if st.button("🚀 Generar Material Educativo Completo"):
     if f_circ: p_h.add_run().add_picture(f_circ, width=Inches(1.2))
     
     doc.add_heading(titulo, 0)
-    doc.add_paragraph(f"Elaborado por: {autor}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_aut = doc.add_paragraph(f"Elaborado por: {autor}")
+    p_aut.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
     doc.add_heading('Introducción', 1); doc.add_paragraph(intro)
-    doc.add_heading('Ejercicio de Ejemplo', 1); doc.add_paragraph(latex_res)
+    doc.add_heading('Ejercicio de Aplicación', 1)
+    doc.add_paragraph(f"Modelado Matemático (OCR):").bold = True
+    doc.add_paragraph(latex_res)
     doc.add_picture(buf_graf, width=Inches(5))
     
-    # Agregar Ejercicios Propuestos
-    doc.add_heading('Ejercicios Propuestos', 1)
+    doc.add_heading('Ejercicios de Consolidación', 1)
     doc.add_paragraph(texto_ejercicios)
     for b_img in list_img_buf:
         doc.add_picture(b_img, width=Inches(4))
     
-    doc.add_heading('Conclusiones', 1); doc.add_paragraph(conclu)
-    doc.add_heading('Recomendaciones', 1); doc.add_paragraph(recom)
+    doc.add_heading('Conclusiones Académicas', 1); doc.add_paragraph(conclu)
+    doc.add_heading('Recomendaciones de Estudio', 1); doc.add_paragraph(recom)
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
 
     # --- LATEX ---
-    tex_imgs = "" # Para incluir las imágenes en LaTeX si se desea (requiere los archivos locales)
     latex_file = f"""\\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage{{amsmath, graphicx, tikz}}
@@ -132,12 +135,12 @@ if st.button("🚀 Generar Material Educativo Completo"):
     \\begin{{tikzpicture}} \\clip [circle] (0,0) circle (1.5cm); \\node at (0,0) {{\\includegraphics[width=3cm]{{perfil.jpeg}}}}; \\end{{tikzpicture}}
 }};
 \\end{{tikzpicture}}
-\\title{{\\textbf{{{titulo}}}}} \\author{{Elaborado por: {autor}}} \\date{{\\today}} \\maketitle
+\\title{{\\textbf{{{titulo}}}}} \\author{{Elaborado por: \\\\ {autor}}} \\date{{\\today}} \\maketitle
 \\section{{Introducción}} {intro}
-\\section{{Desarrollo}} \\noindent Expresión: \\\\ \\centering $ {latex_res} $ \\\\
-\\section{{Ejercicios Propuestos}}
-{texto_ejercicios.replace('\\n', ' \\\\ ')}
+\\section{{Desarrollo Técnico}} \\noindent Expresión analizada: \\\\ \\centering $ {latex_res} $ \\\\
+\\section{{Ejercicios Propuestos}} {texto_ejercicios.replace('\\n', ' \\\\ ')}
 \\section{{Conclusiones}} {conclu}
+\\section{{Recomendaciones}} {recom}
 \\end{{document}}"""
 
     st.download_button("⬇️ Descargar Word", w_io, f"{titulo}.docx")
