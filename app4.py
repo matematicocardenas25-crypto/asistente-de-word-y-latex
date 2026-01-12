@@ -37,7 +37,7 @@ with st.sidebar:
     autor = st.text_input("Autor del Proyecto", autor_predeterminado)
     st.info("Sube 'perfil.jpeg' a tu GitHub.")
 
-st.title("🎓 Sistema Educativo: Generación de Guías con Bibliografía APA")
+st.title("🎓 Sistema Educativo: Generación de Guías Científicas")
 
 # --- SECCIÓN PRINCIPAL: OCR Y GRÁFICA ---
 col1, col2 = st.columns(2)
@@ -71,13 +71,13 @@ with col2:
     except:
         st.error("Error en la función.")
 
-# --- SECCIÓN: EJERCICIOS PROPUESTOS Y DETECCIÓN DE FUENTES ---
+# --- SECCIÓN: EJERCICIOS Y REFERENCIAS ---
 st.divider()
 st.header("📝 3. Sección de Ejercicios y Referencias")
 col_text, col_img = st.columns(2)
 
 with col_text:
-    texto_ejercicios = st.text_area("Enunciados (Escribe 'Fuente: Stewart' para citar automáticamente):", 
+    texto_ejercicios = st.text_area("Enunciados (Escribe 'Fuente: Stewart' para citar):", 
                                     "1. Calcule la derivada según Stewart.\n2. Determine puntos críticos (Fuente: Larson).")
 
 with col_img:
@@ -91,7 +91,7 @@ with col_img:
             list_img_buf.append(b)
 
 # --- BOTÓN DE GENERACIÓN ---
-if st.button("🚀 Generar Material Educativo con Bibliografía"):
+if st.button("🚀 Generar Material Científico con Bibliografía"):
     # LÓGICA DE BIBLIOGRAFÍA AUTOMÁTICA
     fuentes_db = {
         "stewart": "Stewart, J. (2015). Cálculo de una variable: Trascendentes tempranas. Cengage Learning.",
@@ -101,20 +101,15 @@ if st.button("🚀 Generar Material Educativo con Bibliografía"):
         "spivak": "Spivak, M. (2006). Calculus (3ra ed.). Reverté."
     }
     
-    bibliografia_detectada = []
-    texto_minus = texto_ejercicios.lower()
-    for clave, cita in fuentes_db.items():
-        if clave in texto_minus:
-            bibliografia_detectada.append(cita)
-    
-    # Si no detecta nada, poner una base
-    if not bibliografia_detectada:
-        bibliografia_detectada.append("Recursos digitales generados mediante Asistente de IA Matemática.")
+    bib_detectada = [cita for clave, cita in fuentes_db.items() if clave in texto_ejercicios.lower()]
+    if not bib_detectada: bib_detectada.append("Recursos digitales generados mediante Asistente de IA Matemática.")
 
-    # TEXTOS ELEGANTES
-    intro = f"El presente compendio académico, titulado '{titulo}', representa una síntesis técnica diseñada por el {autor}."
-    conclu = f"Tras el análisis exhaustivo de '{titulo}', se concluye que la visualización dinámica refuerza la intuición geométrica."
-    recom = f"Se recomienda realizar un contraste analítico entre los resultados manuales y las gráficas generadas."
+    # --- TEXTOS CIENTÍFICOS AUTOMATIZADOS ---
+    intro = f"La presente investigación técnica, centrada en el estudio de '{titulo}', constituye una aproximación formal a las estructuras matemáticas contemporáneas. Bajo la autoría del {autor}, este documento sistematiza los principios teóricos fundamentales y su correlación con la fenomenología gráfica, garantizando un rigor deductivo en la transición de la abstracción analítica a la representación digital."
+    
+    conclu = f"Tras el análisis riguroso de '{titulo}', se establece que la convergencia entre el cálculo simbólico y la visualización paramétrica permite una comprensión holística de los puntos críticos y el comportamiento asintótico. El uso de algoritmos de reconocimiento óptico de caracteres (OCR) asegura la integridad de la sintaxis matemática, factor determinante para la validez de los modelos presentados."
+    
+    recom = f"Para optimizar el proceso de aprendizaje vinculado a '{titulo}', se recomienda al investigador un contraste dialéctico entre los algoritmos computacionales y los métodos de demostración clásica. Es imperativo abordar los ejercicios de consolidación adjuntos para validar la aprehensión de los conceptos de continuidad y derivabilidad expuestos en esta guía."
 
     # --- WORD ---
     doc = Document()
@@ -126,31 +121,20 @@ if st.button("🚀 Generar Material Educativo con Bibliografía"):
     if f_circ: p_h.add_run().add_picture(f_circ, width=Inches(1.2))
     
     doc.add_heading(titulo, 0)
-    doc.add_paragraph(f"Elaborado por: {autor}").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_heading('Introducción', 1); doc.add_paragraph(intro)
+    p_aut = doc.add_paragraph(f"Elaborado por: {autor}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_heading('Introducción Formal', 1); doc.add_paragraph(intro)
     doc.add_heading('Desarrollo Matemático', 1); doc.add_paragraph(latex_res)
     doc.add_picture(buf_graf, width=Inches(5))
-    
-    doc.add_heading('Ejercicios Propuestos', 1)
-    doc.add_paragraph(texto_ejercicios)
-    for b_img in list_img_buf:
-        doc.add_picture(b_img, width=Inches(4))
-    
-    doc.add_heading('Conclusiones', 1); doc.add_paragraph(conclu)
-    doc.add_heading('Recomendaciones', 1); doc.add_paragraph(recom)
-    
-    # BIBLIOGRAFÍA EN WORD
-    doc.add_page_break()
-    doc.add_heading('Referencias Bibliográficas (Estilo APA)', 1)
-    for cita in bibliografia_detectada:
-        p_cita = doc.add_paragraph(cita)
-        p_cita.style.font.size = Pt(10)
-
+    doc.add_heading('Ejercicios de Consolidación', 1); doc.add_paragraph(texto_ejercicios)
+    for b_img in list_img_buf: doc.add_picture(b_img, width=Inches(4))
+    doc.add_heading('Conclusiones Académicas', 1); doc.add_paragraph(conclu)
+    doc.add_heading('Recomendaciones Metodológicas', 1); doc.add_paragraph(recom)
+    doc.add_page_break(); doc.add_heading('Referencias Bibliográficas (Estilo APA)', 1)
+    for cita in bib_detectada: doc.add_paragraph(cita)
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
 
     # --- LATEX ---
-    citas_latex = "\\begin{itemize}\n" + "\n".join([f"\\item {c}" for c in bibliografia_detectada]) + "\n\\end{itemize}"
-    
+    citas_latex = "\\begin{itemize}\n" + "\n".join([f"\\item {c}" for c in bib_detectada]) + "\n\\end{itemize}"
     latex_file = f"""\\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage{{amsmath, graphicx, tikz}}
@@ -161,13 +145,12 @@ if st.button("🚀 Generar Material Educativo con Bibliografía"):
 }};
 \\end{{tikzpicture}}
 \\title{{\\textbf{{{titulo}}}}} \\author{{Elaborado por: \\\\ {autor}}} \\maketitle
-\\section{{Introducción}} {intro}
-\\section{{Desarrollo}} $ {latex_res} $ 
-\\section{{Ejercicios Propuestos}} {texto_ejercicios.replace('\\n', ' \\\\ ')}
+\\section{{Introducción Formal}} {intro}
+\\section{{Análisis Técnico}} $ {latex_res} $ 
+\\section{{Consolidación Práctica}} {texto_ejercicios.replace('\\n', ' \\\\ ')}
 \\section{{Conclusiones}} {conclu}
 \\newpage
-\\section{{Bibliografía (APA)}}
-{citas_latex}
+\\section{{Bibliografía (APA)}} {citas_latex}
 \\end{{document}}"""
 
     st.download_button("⬇️ Descargar Word", w_io, f"{titulo}.docx")
