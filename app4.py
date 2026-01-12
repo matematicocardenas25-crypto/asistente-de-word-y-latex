@@ -118,7 +118,7 @@ if st.button("🚀 Generar Todo con Foto Circular"):
 \\node[anchor=north east, xshift=-1cm, yshift=-1cm] at (current page.north east) {{
     \\begin{{tikzpicture}}
         \\clip [circle] (0,0) circle (1.2cm);
-        \\node at (0,0) {{\\includegraphics[width=2.4cm]{{perfil.png}}}};
+        \\node at (0,0) {{\\includegraphics[width=2.4cm]{{perfil.jpeg}}}};
     \\end{{tikzpicture}}
 }};
 \\end{{tikzpicture}}
