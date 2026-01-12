@@ -10,8 +10,11 @@ import io
 import os
 from datetime import datetime
 
-# SOLUCIÓN AL PERMISSION ERROR: Forzar directorio temporal con permisos de escritura
+# --- SOLUCIÓN AL ERROR DE PERMISOS ---
+# Forzamos a que el modelo descargue sus archivos en la carpeta temporal de Streamlit Cloud
 os.environ['PIX2TEX_MODEL_DIR'] = '/tmp/pix2tex'
+if not os.path.exists('/tmp/pix2tex'):
+    os.makedirs('/tmp/pix2tex')
 
 st.set_page_config(page_title="Calculo Pro: Compilador de Élite", layout="wide")
 
@@ -28,9 +31,10 @@ def generar_textos_robustos(titulo, firma):
 @st.cache_resource
 def cargar_modelo_ocr():
     try:
+        # Configuración específica para evitar el error de permisos detectado en la captura
         return LatexOCR()
     except Exception as e:
-        st.error(f"Error técnico en OCR: {e}")
+        st.error(f"Error al inicializar el motor matemático: {e}")
         return None
 
 def hacer_circulo(imagen_path):
@@ -45,9 +49,9 @@ def hacer_circulo(imagen_path):
         return buf
     except: return None
 
-# --- PERSISTENCIA DE DATOS ---
-if 'ocr_teoria' not in st.session_state: st.session_state.ocr_teoria = ""
-if 'ejercicios_imagenes' not in st.session_state: st.session_state.ejercicios_imagenes = []
+# --- ESTADO DE SESIÓN ---
+if 'ocr_resultado' not in st.session_state: st.session_state.ocr_resultado = ""
+if 'lista_ejercicios' not in st.session_state: st.session_state.lista_ejercicios = []
 
 with st.sidebar:
     st.header("📋 Configuración Profesional")
@@ -62,59 +66,66 @@ col_in, col_pre = st.columns([1, 1.2])
 with col_in:
     st.subheader("📥 Insumos de Contenido")
     
-    # TEORÍA E INTEGRACIÓN DE CAPTURA
+    # 1. TEORÍA E INTEGRACIÓN DE CAPTURA
     texto_teoria = st.text_area("✍️ Desarrollo Teórico:", "Inserte el desarrollo conceptual aquí...", height=100)
-    file_ocr = st.file_uploader("🔢 Captura de Ecuación (Se integrará al texto)", type=["png", "jpg", "jpeg"])
+    file_ocr = st.file_uploader("🔢 Captura de Ecuación (Integración Automática)", type=["png", "jpg", "jpeg"])
     
     if file_ocr:
         model = cargar_modelo_ocr()
         if model:
-            with st.spinner("Transcribiendo contenido de la imagen..."):
-                st.session_state.ocr_teoria = model(Image.open(file_ocr))
-            st.success("¡Ecuación integrada automáticamente!")
-            st.latex(st.session_state.ocr_teoria)
+            with st.spinner("Procesando imagen matemática..."):
+                st.session_state.ocr_resultado = model(Image.open(file_ocr))
+            st.success("Ecuación transcrita con éxito.")
+            st.latex(st.session_state.ocr_resultado)
 
-    # GRÁFICA DE ALTO NIVEL
-    func_in = st.text_input("📈 Modelo Matemático (Gráfica HD):", "1/x")
+    # 2. GRÁFICA DE ALTO NIVEL (RESOLUCIÓN ACADÉMICA)
+    func_in = st.text_input("📈 Modelo Matemático para Gráfica HD:", "1/x")
     buf_graf = io.BytesIO()
     try:
-        plt.style.use('seaborn-v0_8-whitegrid') # Estilo profesional
-        x_v = np.linspace(1, 15, 30)
+        plt.style.use('ggplot') 
+        x_v = np.linspace(1, 15, 40)
         y_v = eval(func_in.replace('^', '**'), {"x": x_v, "np": np})
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.scatter(x_v, y_v, color='#003366', s=50, edgecolors='black', label=f'Sucesión: {func_in}')
-        ax.set_title(f"Comportamiento de {func_in}", fontsize=12, fontweight='bold')
-        ax.set_xlabel("Términos (n)", fontsize=10); ax.set_ylabel("Valor (a_n)", fontsize=10)
-        ax.legend(); ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False)
-        fig.savefig(buf_graf, format='png', dpi=300); buf_graf.seek(0)
-    except: pass
+        ax.plot(x_v, y_v, 'o-', color='#003366', markersize=6, label=f'a_n = {func_in}')
+        ax.set_title(f"Comportamiento de la Sucesión", fontsize=12, fontweight='bold')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        ax.legend()
+        fig.savefig(buf_graf, format='png', dpi=300); buf_graf.seek(0) # DPI 300 para alta calidad
+    except Exception as e:
+        st.warning(f"Error en gráfica: {e}")
 
-    # EJERCICIOS Y CAPTURAS
+    # 3. EJERCICIOS PROPUESTOS
     st.markdown("---")
-    texto_ejercicios = st.text_area("📝 Ejercicios Propuestos (Texto):", "1. Determine el límite de...")
-    imgs_ejercicios = st.file_uploader("🖼️ Subir Capturas de Guías/Ejercicios", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
-    st.session_state.ejercicios_imagenes = [io.BytesIO(f.getvalue()) for f in imgs_ejercicios] if imgs_ejercicios else []
+    texto_ejercicios = st.text_area("📝 Ejercicios Propuestos (Texto):", "Determine el carácter de las siguientes series...")
+    imgs_ejercicios = st.file_uploader("🖼️ Capturas de Guías de Ejercicios", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    st.session_state.lista_ejercicios = [io.BytesIO(f.getvalue()) for f in imgs_ejercicios] if imgs_ejercicios else []
 
 with col_pre:
-    st.subheader("👁️ Vista Previa del Documento Final")
+    st.subheader("👁️ Vista Previa del Cuerpo del Documento")
     with st.container(border=True):
         st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
         st.write(f"**Introducción:** {textos['intro']}")
+        
         st.markdown("### II. Desarrollo Teórico")
         st.write(texto_teoria)
-        if st.session_state.ocr_teoria:
-            st.latex(st.session_state.ocr_teoria) # Aquí se visualiza la captura pasada a texto
-        if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf)
+        if st.session_state.ocr_resultado:
+            st.latex(st.session_state.ocr_resultado)
+            
+        if buf_graf.getbuffer().nbytes > 0:
+            st.image(buf_graf, caption="Gráfica de Alta Resolución")
+            
         st.markdown("### IV. Ejercicios Propuestos")
         st.write(texto_ejercicios)
-        for img in st.session_state.ejercicios_imagenes:
-            st.image(img, caption="Imagen de Ejercicio Integrada")
+        for img in st.session_state.lista_ejercicios:
+            st.image(img, width=350)
 
-# --- COMPILACIÓN FINAL ---
-if st.button("🚀 Compilar y Descargar Documentos"):
+# --- BOTÓN DE COMPILACIÓN ---
+if st.button("🚀 Compilar y Sincronizar Documentos"):
     doc = Document()
     seccion = doc.sections[0]
     seccion.different_first_page_header_footer = True
+    
+    # Perfil circular en la primera página
     f_circ = hacer_circulo('perfil.jpeg')
     if f_circ:
         p = seccion.first_page_header.paragraphs[0]
@@ -126,18 +137,17 @@ if st.button("🚀 Compilar y Descargar Documentos"):
 
     doc.add_heading('I. Introducción', 1); doc.add_paragraph(textos['intro'])
     
-    # Aquí se integra la Teoría + La Captura transcrita
     doc.add_heading('II. Desarrollo Teórico', 1)
     doc.add_paragraph(texto_teoria)
-    if st.session_state.ocr_teoria:
-        doc.add_paragraph(f"Análisis Formulado: {st.session_state.ocr_teoria}")
+    if st.session_state.ocr_resultado:
+        doc.add_paragraph(f"Fórmula Analítica Detectada: {st.session_state.ocr_resultado}")
 
-    if buf_graf.getbuffer().nbytes > 0: 
+    if buf_graf.getbuffer().nbytes > 0:
         doc.add_picture(buf_graf, width=Inches(4.5))
     
     doc.add_heading('IV. Ejercicios Propuestos', 1)
     doc.add_paragraph(texto_ejercicios)
-    for img_buf in st.session_state.ejercicios_imagenes:
+    for img_buf in st.session_state.lista_ejercicios:
         doc.add_picture(img_buf, width=Inches(3.5))
 
     doc.add_heading('V. Conclusiones', 1); doc.add_paragraph(textos['conclu'])
@@ -145,9 +155,9 @@ if st.button("🚀 Compilar y Descargar Documentos"):
     
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
     
-    # LaTeX Sincronizado
-    latex_str = f"\\documentclass{{article}}\\usepackage[utf8]{{inputenc}}\\usepackage{{amsmath,graphicx}}\\begin{{document}}\\title{{{titulo}}}\\author{{{firma_oficial}}}\\maketitle\\section{{Introducción}}{textos['intro']}\\section{{Teoría}}{texto_teoria}\\\\ $${st.session_state.ocr_teoria}$$\\section{{Ejercicios}}{texto_ejercicios}\\section{{Conclusiones}}{textos['conclu']}\\section{{Recomendaciones}}{textos['recom']}\\end{{document}}"
+    # Estructura LaTeX
+    latex_str = f"\\documentclass{{article}}\\usepackage[utf8]{{inputenc}}\\usepackage{{amsmath,graphicx}}\\begin{{document}}\\title{{{titulo}}}\\author{{{firma_oficial}}}\\maketitle\\section{{Introducción}}{textos['intro']}\\section{{Teoría}}{texto_teoria} $$ {st.session_state.ocr_resultado} $$ \\section{{Ejercicios}}{texto_ejercicios}\\section{{Conclusiones}}{textos['conclu']}\\section{{Recomendaciones}}{textos['recom']}\\end{{document}}"
 
-    st.download_button("⬇️ Word (Perfil UNAN)", w_io, f"{titulo}.docx")
-    st.download_button("⬇️ LaTeX (Científico)", latex_str, f"{titulo}.tex")
-    st.success("¡Documentos integrados y corregidos!")
+    st.download_button("⬇️ Descargar Word (Sincronizado)", w_io, f"{titulo}.docx")
+    st.download_button("⬇️ Descargar LaTeX (Sincronizado)", latex_str, f"{titulo}.tex")
+    st.success("¡Documentos generados y errores corregidos!")
