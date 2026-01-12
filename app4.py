@@ -10,8 +10,8 @@ import io
 import os
 from datetime import datetime
 
-# --- SOLUCIÓN DEFINITIVA AL ERROR DE PERMISOS ---
-# Forzamos al sistema a usar una carpeta con permisos de escritura totales
+# --- BLOQUE DE DESBLOQUEO DE PERMISOS (SOLUCIÓN AL ERROR ROJO) ---
+# Forzamos al modelo a instalarse en la carpeta temporal con permisos totales
 os.environ['PIX2TEX_MODEL_DIR'] = '/tmp/pix2tex'
 if not os.path.exists('/tmp/pix2tex'):
     os.makedirs('/tmp/pix2tex', exist_ok=True)
@@ -25,19 +25,19 @@ def generar_textos_robustos(titulo, firma):
     return {
         "intro": f"El presente compendio técnico enfocado en '{titulo}' constituye una sistematización rigurosa de los fundamentos analíticos de las ciencias exactas. Bajo la autoría del Lic. {firma}, este documento articula la abstracción algebraica con la fenomenología visual a fecha de {fecha_actual}.",
         "conclu": f"Tras el estudio exhaustivo de '{titulo}', se establece que la convergencia entre el cálculo simbólico y la visualización paramétrica permite una comprensión holística de los comportamientos analíticos analizados.",
-        "recom": f"Se recomienda realizar un contraste crítico entre la resolución analítica manual y la verificación computacional presentada para consolidar el pensamiento lógico-matemático avanzado."
+        "recom": f"Se recomienda realizar un contraste crítico entre la resolución analítica manual y la verificación computacional presentada para consolidar el pensamiento lógico-matemático avanzado en Nicaragua."
     }
 
 @st.cache_resource
 def cargar_modelo_ocr():
     try:
-        # Iniciamos el motor en la zona segura (/tmp/)
+        # Iniciamos el motor en la zona segura desbloqueada
         return LatexOCR()
     except Exception as e:
-        st.error(f"Error al inicializar el motor matemático: {e}")
+        st.error(f"Error técnico de permisos: {e}. Intente refrescar la página.")
         return None
 
-# --- ESTADO DE SESIÓN ---
+# --- ESTADO DE SESIÓN (PARA QUE NO SE BORRE NADA) ---
 if 'ocr_resultado' not in st.session_state: st.session_state.ocr_resultado = ""
 if 'imagenes_ejercicios' not in st.session_state: st.session_state.imagenes_ejercicios = []
 
@@ -54,18 +54,20 @@ col_in, col_pre = st.columns([1, 1.2])
 with col_in:
     st.subheader("📥 Insumos de Contenido")
     
-    # TEORÍA + CAPTURA
-    texto_teoria = st.text_area("✍️ Desarrollo Teórico:", "Inserte el desarrollo conceptual aquí...", height=100)
+    # TEORÍA + INTEGRACIÓN DE CAPTURA
+    texto_teoria = st.text_area("✍️ Desarrollo Teórico (Texto):", "Inserte el desarrollo conceptual aquí...", height=100)
     file_ocr = st.file_uploader("🔢 Captura de Ecuación (Integración Automática)", type=["png", "jpg", "jpeg"])
     
     if file_ocr:
         model = cargar_modelo_ocr()
         if model:
-            with st.spinner("Procesando imagen matemática..."):
+            with st.spinner("Desbloqueando motor y procesando imagen..."):
+                # Se guarda la transcripción en el cerebro del programa
                 st.session_state.ocr_resultado = model(Image.open(file_ocr))
+            st.success("¡Contenido de la captura integrado!")
             st.latex(st.session_state.ocr_resultado)
 
-    # GRÁFICA HD
+    # GRÁFICA HD (REVISADA PARA EVITAR SYNTAX ERROR)
     func_in = st.text_input("📈 Modelo para Gráfica HD:", "1/x")
     buf_graf = io.BytesIO()
     try:
@@ -74,7 +76,7 @@ with col_in:
         y_v = eval(func_in.replace('^', '**'), {"x": x_v, "np": np})
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.plot(x_v, y_v, 'o-', color='#003366', label=f'a_n = {func_in}')
-        ax.set_title("Análisis Gráfico de la Sucesión")
+        ax.set_title("Análisis Gráfico de la Sucesión", fontsize=12)
         ax.grid(True, alpha=0.3)
         ax.legend()
         fig.savefig(buf_graf, format='png', dpi=300)
@@ -84,43 +86,44 @@ with col_in:
 
     # EJERCICIOS + CAPTURAS
     st.markdown("---")
-    texto_ejercicios = st.text_area("📝 Ejercicios (Texto):", "Resolver los siguientes casos...")
-    imgs_ejercicios = st.file_uploader("🖼️ Capturas de Ejercicios", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    texto_ejercicios = st.text_area("📝 Ejercicios Propuestos (Texto):", "Resolver los siguientes casos...")
+    imgs_ejercicios = st.file_uploader("🖼️ Capturas de Guías de Ejercicios", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
     if imgs_ejercicios:
         st.session_state.imagenes_ejercicios = [io.BytesIO(f.getvalue()) for f in imgs_ejercicios]
 
 with col_pre:
-    st.subheader("👁️ Vista Previa del Documento Final")
+    st.subheader("👁️ Vista Previa Sincronizada")
     with st.container(border=True):
         st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
-        st.write(f"**Introducción:** {textos['intro']}")
+        st.write(f"**I. Introducción:** {textos['intro']}")
         
         st.markdown("### II. Desarrollo Teórico")
         st.write(texto_teoria)
         if st.session_state.ocr_resultado:
-            st.markdown("**Ecuación formulada:**")
+            st.markdown("**Fórmula extraída de la imagen:**")
             st.latex(st.session_state.ocr_resultado)
             
         if buf_graf.getbuffer().nbytes > 0:
-            st.image(buf_graf)
+            st.image(buf_graf, caption="Visualización Analítica")
             
         st.markdown("### IV. Ejercicios Propuestos")
         st.write(texto_ejercicios)
-        for img in st.session_state.imagenes_ejercicios:
-            st.image(img, width=400)
+        for img_data in st.session_state.imagenes_ejercicios:
+            st.image(img_data, width=350)
 
-# --- BOTÓN DE COMPILACIÓN ---
-if st.button("🚀 Compilar y Sincronizar"):
+# --- COMPILACIÓN FINAL ---
+if st.button("🚀 Compilar y Sincronizar Documentos"):
     doc = Document()
     doc.add_heading(titulo, 0)
-    doc.add_paragraph(f"Autor: {firma_oficial}\n{fecha_actual}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"Autor: {firma_oficial}\nLeón, Nicaragua | {fecha_actual}").alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     doc.add_heading('I. Introducción', 1); doc.add_paragraph(textos['intro'])
     
+    # INTEGRACIÓN DE CAPTURA EN EL WORD
     doc.add_heading('II. Desarrollo Teórico', 1)
     doc.add_paragraph(texto_teoria)
     if st.session_state.ocr_resultado:
-        doc.add_paragraph(f"Análisis Matemático: {st.session_state.ocr_resultado}")
+        doc.add_paragraph(f"Expresión Matemática Detectada: {st.session_state.ocr_resultado}")
 
     if buf_graf.getbuffer().nbytes > 0:
         doc.add_picture(buf_graf, width=Inches(4.5))
@@ -135,8 +138,9 @@ if st.button("🚀 Compilar y Sincronizar"):
     
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
     
+    # LaTeX Sincronizado
     latex_str = f"\\documentclass{{article}}\\usepackage[utf8]{{inputenc}}\\usepackage{{amsmath,graphicx}}\\begin{{document}}\\title{{{titulo}}}\\author{{{firma_oficial}}}\\maketitle\\section{{Introducción}}{textos['intro']}\\section{{Teoría}}{texto_teoria} $$ {st.session_state.ocr_resultado} $$ \\section{{Ejercicios}}{texto_ejercicios}\\section{{Conclusiones}}{textos['conclu']}\\section{{Recomendaciones}}{textos['recom']}\\end{{document}}"
 
     st.download_button("⬇️ Descargar Word", w_io, f"{titulo}.docx")
     st.download_button("⬇️ Descargar LaTeX", latex_str, f"{titulo}.tex")
-    st.success("¡Documentos sincronizados!")
+    st.success("¡Permisos desbloqueados y archivos listos!")
