@@ -10,7 +10,7 @@ import io
 import os
 from datetime import datetime
 
-# Configuración de entorno
+# Configuración de entorno para evitar errores de permisos
 os.environ['PIX2TEX_MODEL_DIR'] = '/tmp/pix2tex'
 
 st.set_page_config(page_title="Calculo Pro: Compilador de Élite", layout="wide")
@@ -18,7 +18,7 @@ st.set_page_config(page_title="Calculo Pro: Compilador de Élite", layout="wide"
 # Fecha automatizada
 fecha_actual = datetime.now().strftime("%d de %B, %Y")
 
-# --- MOTOR DE GENERACIÓN DE TEXTO CIENTÍFICO (ROBUSTO) ---
+# --- MOTOR DE GENERACIÓN DE TEXTO CIENTÍFICO ---
 def generar_textos_robustos(titulo, firma):
     return {
         "intro": (
@@ -67,7 +67,7 @@ def detectar_bibliografia(texto):
     encontradas = [v for k, v in db.items() if k in texto.lower()]
     return encontradas if encontradas else ["Recurso educativo original, UNAN-León (2026)."]
 
-# --- ESTADO DE SESIÓN ---
+# --- ESTADO DE SESIÓN PERSISTENTE ---
 if 'latex_transcrito' not in st.session_state: st.session_state.latex_transcrito = ""
 
 with st.sidebar:
@@ -83,94 +83,75 @@ col_in, col_pre = st.columns([1, 1.2])
 
 with col_in:
     st.subheader("📥 Insumos de Contenido")
-    texto_teoria = st.text_area("✍️ Fundamentación Teórica:", "Inserte el desarrollo conceptual aquí...", height=150)
+    texto_teoria = st.text_area("✍️ Fundamentación Teórica:", "Inserte desarrollo aquí...", height=100)
     
-    file_ocr = st.file_uploader("🔢 Captura de Ecuación (OCR)", type=["png", "jpg", "jpeg"])
+    file_ocr = st.file_uploader("🔢 Captura de Ecuación (Análisis)", type=["png", "jpg", "jpeg"])
     if file_ocr:
         model = cargar_modelo_ocr()
         if model:
-            with st.spinner("Analizando captura..."):
+            with st.spinner("Leyendo captura..."):
                 st.session_state.latex_transcrito = model(Image.open(file_ocr))
             st.latex(st.session_state.latex_transcrito)
 
-    func_in = st.text_input("📈 Función/Sucesión (ej: 1/x):", "x**2")
+    func_in = st.text_input("📈 Modelo Matemático (Gráfica):", "1/x")
     buf_graf = io.BytesIO()
     try:
-        x_v = np.linspace(1, 10, 20)
-        y_v = eval(func_in.replace('^', '**'), {"x": x_v, "np": np})
-        fig, ax = plt.subplots(figsize=(5, 3))
-        ax.scatter(x_v, y_v, color='#003366')
-        ax.grid(True, linestyle=':', alpha=0.6)
+        x_v = np.linspace(1, 10, 20); y_v = eval(func_in.replace('^', '**'), {"x": x_v, "np": np})
+        fig, ax = plt.subplots(figsize=(5, 3)); ax.scatter(x_v, y_v, color='#003366'); ax.grid(True, alpha=0.3)
         fig.savefig(buf_graf, format='png'); buf_graf.seek(0)
     except: pass
 
-    texto_ejercicios = st.text_area("📝 Ejercicios Propuestos:", "1. Resolver...", height=100)
+    st.markdown("---")
+    texto_ejercicios = st.text_area("📝 Ejercicios (Texto):", "1. Analice la convergencia...")
+    imgs_ejercicios = st.file_uploader("🖼️ Capturas de Ejercicios Propuestos", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    list_img_buf = [io.BytesIO(f.getvalue()) for f in imgs_ejercicios] if imgs_ejercicios else []
 
 with col_pre:
-    st.subheader("👁️ Vista Previa del Documento")
+    st.subheader("👁️ Vista Previa Completa")
     with st.container(border=True):
         st.markdown(f"<p style='text-align:right;'><b>{firma_oficial}</b><br>{fecha_actual}</p>", unsafe_allow_html=True)
         st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
-        st.markdown(f"**I. Introducción:** {textos['intro']}")
-        st.markdown(f"**II. Teoría:** {texto_teoria}")
+        st.write(f"**I. Introducción:** {textos['intro']}")
+        st.write(f"**II. Teoría:** {texto_teoria}")
         if st.session_state.latex_transcrito:
-            st.markdown("**III. Análisis Analítico:**")
+            st.write("**III. Análisis Analítico (Captura):**")
             st.latex(st.session_state.latex_transcrito)
         if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf)
-        st.markdown(f"**IV. Ejercicios:** {texto_ejercicios}")
-        st.markdown(f"**V. Conclusiones:** {textos['conclu']}")
-        st.markdown(f"**VI. Recomendaciones:** {textos['recom']}")
+        st.write(f"**IV. Ejercicios:** {texto_ejercicios}")
+        for b in list_img_buf: st.image(b, width=300)
+        st.write(f"**V. Conclusiones:** {textos['conclu']}")
+        st.write(f"**VI. Recomendaciones:** {textos['recom']}")
 
-# --- COMPILACIÓN ---
-if st.button("🚀 Compilar Archivos Finales"):
+# --- COMPILACIÓN FINAL ---
+if st.button("🚀 Compilar Material de Élite"):
     bibliografia = detectar_bibliografia(texto_teoria + " " + texto_ejercicios)
     
-    # --- GENERACIÓN WORD ---
     doc = Document()
     seccion = doc.sections[0]
     seccion.different_first_page_header_footer = True
     f_circ = hacer_circulo('perfil.jpeg')
     if f_circ:
-        header = seccion.first_page_header
-        p = header.paragraphs[0]
+        p = seccion.first_page_header.paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p.add_run().add_picture(f_circ, width=Inches(1.1))
-        p.add_run(f"\n{fecha_actual}").font.size = Pt(9)
-
+        p.add_run().add_picture(f_circ, width=Inches(1))
+    
     doc.add_heading(titulo, 0)
-    doc.add_paragraph(f"Autor: {firma_oficial}").alignment = WD_ALIGN_PARAGRAPH.CENTER
-
     doc.add_heading('I. Introducción', 1); doc.add_paragraph(textos['intro'])
-    doc.add_heading('II. Fundamentación Teórica', 1); doc.add_paragraph(texto_teoria)
+    doc.add_heading('II. Teoría', 1); doc.add_paragraph(texto_teoria)
     if st.session_state.latex_transcrito:
         doc.add_heading('III. Análisis Analítico', 1); doc.add_paragraph(st.session_state.latex_transcrito)
-    if buf_graf.getbuffer().nbytes > 0: doc.add_picture(buf_graf, width=Inches(4.5))
+    if buf_graf.getbuffer().nbytes > 0: doc.add_picture(buf_graf, width=Inches(4))
     doc.add_heading('IV. Ejercicios Propuestos', 1); doc.add_paragraph(texto_ejercicios)
-    doc.add_heading('V. Conclusiones Académicas', 1); doc.add_paragraph(textos['conclu'])
-    doc.add_heading('VI. Recomendaciones Metodológicas', 1); doc.add_paragraph(textos['recom'])
-    
-    doc.add_page_break()
-    doc.add_heading('Bibliografía (APA)', 1)
+    for b in list_img_buf: doc.add_picture(b, width=Inches(3))
+    doc.add_heading('V. Conclusiones', 1); doc.add_paragraph(textos['conclu'])
+    doc.add_heading('VI. Recomendaciones', 1); doc.add_paragraph(textos['recom'])
+    doc.add_page_break(); doc.add_heading('Bibliografía (APA)', 1)
     for bib in bibliografia: doc.add_paragraph(bib, style='List Bullet')
-
+    
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
+    
+    latex_str = f"\\documentclass{{article}}\\usepackage[utf8]{{inputenc}}\\usepackage{{amsmath,amssymb,graphicx}}\\begin{{document}}\\title{{{titulo}}}\\author{{{firma_oficial}}}\\maketitle\\section{{Introducción}}{textos['intro']}\\section{{Teoría}}{texto_teoria}\\section{{Análisis}}$${st.session_state.latex_transcrito}$$\\section{{Ejercicios}}{texto_ejercicios}\\section{{Conclusiones}}{textos['conclu']}\\section{{Recomendaciones}}{textos['recom']}\\section{{Bibliografía}}\\begin{{itemize}}\\item {bibliografia[0]}\\end{{itemize}}\\end{{document}}"
 
-    # --- GENERACIÓN LATEX ---
-    bib_latex = "\n".join([f"\\item {b}" for b in bibliografia])
-    latex_str = f"""\\documentclass{{article}}
-\\usepackage[utf8]{{inputenc}}
-\\usepackage{{amsmath, graphicx, pgfplots, amssymb}}
-\\begin{{document}}
-\\title{{\\textbf{{{titulo}}}}} \\author{{{firma_oficial}}} \\date{{{fecha_actual}}} \\maketitle
-\\section{{Introducción}} {textos['intro']}
-\\section{{Teoría}} {texto_teoria}
-\\section{{Análisis}} $$ {st.session_state.latex_transcrito} $$
-\\section{{Ejercicios}} {texto_ejercicios.replace('\\n', ' \\\\ ')}
-\\section{{Conclusiones}} {textos['conclu']}
-\\section{{Recomendaciones}} {textos['recom']}
-\\section{{Bibliografía}} \\begin{{itemize}} {bib_latex} \\end{{itemize}}
-\\end{{document}}"""
-
-    st.download_button("⬇️ Descargar Word Premium", w_io, f"{titulo}.docx")
-    st.download_button("⬇️ Descargar LaTeX Científico", latex_str, f"{titulo}.tex")
-    st.success("¡Formatos restaurados y listos para descarga!")
+    st.download_button("⬇️ Descargar Word", w_io, f"{titulo}.docx")
+    st.download_button("⬇️ Descargar LaTeX", latex_str, f"{titulo}.tex")
+    st.success("¡Documentos generados con éxito!")
