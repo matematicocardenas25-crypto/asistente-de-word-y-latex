@@ -11,23 +11,17 @@ import os
 
 st.set_page_config(page_title="Calculo Pro: Formato Académico", layout="wide")
 
-# --- FUNCIÓN PARA HACER LA FOTO CIRCULAR ---
 def hacer_circulo(imagen_path):
     try:
         img = Image.open(imagen_path).convert("RGBA")
-        # Hacerla cuadrada
         ancho, alto = img.size
         min_dim = min(ancho, alto)
         img = img.crop(((ancho - min_dim) // 2, (alto - min_dim) // 2, (ancho + min_dim) // 2, (alto + min_dim) // 2))
-        
-        # Crear máscara circular
         mascara = Image.new('L', (min_dim, min_dim), 0)
         dibujo = ImageDraw.Draw(mascara)
         dibujo.ellipse((0, 0, min_dim, min_dim), fill=255)
-        
         resultado = ImageOps.fit(img, mascara.size, centering=(0.5, 0.5))
         resultado.putalpha(mascara)
-        
         buf = io.BytesIO()
         resultado.save(buf, format="PNG")
         buf.seek(0)
@@ -35,12 +29,11 @@ def hacer_circulo(imagen_path):
     except:
         return None
 
-# --- BARRA LATERAL ---
 with st.sidebar:
     st.header("📋 Configuración")
-    titulo = st.text_input("Título del Proyecto", "Proyecto de Cálculo")
+    titulo = st.text_input("Título del Proyecto", "Análisis de Funciones y Cálculo Diferencial")
     autor = st.text_input("Nombre del Autor", "Tu Nombre")
-    st.info("Sube 'perfil.png' a GitHub para activar la foto circular.")
+    st.info("Asegúrate de que 'perfil.jpeg' esté en tu GitHub.")
 
 st.title("🎓 Generador Académico: Word + LaTeX (Premium)")
 
@@ -75,55 +68,59 @@ with col2:
     except:
         st.error("Error en la función.")
 
-# --- GENERACIÓN DE ARCHIVOS ---
 st.divider()
-if st.button("🚀 Generar Todo con Foto Circular"):
-    intro = f"Este proyecto sobre {titulo} ha sido elaborado por {autor}..."
-    conclu = "Se concluye que el análisis gráfico y digital optimiza los resultados..."
-    recom = "Se recomienda el uso de este formato para presentaciones académicas de alto nivel."
+if st.button("🚀 Generar Todo con Formato Elegante"):
+    # TEXTOS ELEGANTES
+    intro = f"El presente estudio, titulado '{titulo}', constituye un análisis riguroso de los principios fundamentales del cálculo. A través de la integración de herramientas de visión computacional para la digitalización de expresiones matemáticas y la representación gráfica de alta precisión, se busca profundizar en el comportamiento asintótico y estructural de las funciones analizadas por {autor}."
+    conclu = "Se concluye que la convergencia entre el análisis analítico y la representación visual computarizada permite una comprensión holística de las propiedades de la función. La precisión en la transcripción de caracteres matemáticos y el centrado riguroso de los ejes coordenados son esenciales para una interpretación académica correcta."
+    recom = "Se recomienda emplear este marco metodológico para la documentación de procesos de ingeniería y ciencias exactas, asegurando siempre la calibración de los parámetros de visualización para capturar la esencia de las discontinuidades y puntos críticos de las funciones."
 
-    # --- WORD CON FOTO CIRCULAR A LA DERECHA ---
+    # --- WORD: FOTO SOLO EN PRIMERA HOJA ---
     doc = Document()
+    # Usamos secciones para que la foto solo esté en la primera página
+    seccion = doc.sections[0]
+    seccion.different_first_page_header_footer = True
+    header = seccion.first_page_header
+    p_header = header.paragraphs[0]
+    p_header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     
-    # Encabezado con foto
-    header_section = doc.sections[0].header
-    p = header_section.paragraphs[0]
-    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = p.add_run()
     foto_circular = hacer_circulo('perfil.jpeg')
     if foto_circular:
-        run.add_picture(foto_circular, width=Inches(1))
+        run = p_header.add_run()
+        run.add_picture(foto_circular, width=Inches(1.2))
     
     doc.add_heading(titulo, 0)
-    doc.add_paragraph(f"Autor: {autor}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_autor = doc.add_paragraph(f"Por: {autor}")
+    p_autor.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
     doc.add_heading('Introducción', 1); doc.add_paragraph(intro)
-    doc.add_heading('Análisis', 1); doc.add_paragraph(f"Fórmula: {latex_res}")
+    doc.add_heading('Desarrollo Matemático', 1)
+    doc.add_paragraph(f"Expresión identificada mediante OCR:").bold = True
+    doc.add_paragraph(latex_res)
     doc.add_picture(buf_graf, width=Inches(5))
     doc.add_heading('Conclusiones', 1); doc.add_paragraph(conclu)
+    doc.add_heading('Recomendaciones', 1); doc.add_paragraph(recom)
 
     word_io = io.BytesIO(); doc.save(word_io); word_io.seek(0)
     
-    # --- LATEX CON FOTO CIRCULAR ---
+    # --- LATEX: FOTO SOLO EN PRIMERA HOJA ---
     latex_file = f"""\\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
-\\usepackage{{amsmath}}
-\\usepackage{{graphicx}}
-\\usepackage{{tikz}}
+\\usepackage{{amsmath, graphicx, tikz}}
 
 \\begin{{document}}
 
-% Foto circular arriba a la derecha
+% Foto circular solo en la portada (esquina superior derecha)
 \\begin{{tikzpicture}}[remember picture,overlay]
-\\node[anchor=north east, xshift=-1cm, yshift=-1cm] at (current page.north east) {{
+\\node[anchor=north east, xshift=-1cm, yshift=-1.5cm] at (current page.north east) {{
     \\begin{{tikzpicture}}
-        \\clip [circle] (0,0) circle (1.2cm);
-        \\node at (0,0) {{\\includegraphics[width=2.4cm]{{perfil.jpeg}}}};
+        \\clip [circle] (0,0) circle (1.5cm);
+        \\node at (0,0) {{\\includegraphics[width=3cm]{{perfil.jpeg}}}};
     \\end{{tikzpicture}}
 }};
 \\end{{tikzpicture}}
 
-\\title{{{titulo}}}
+\\title{{\\textbf{{{titulo}}}}}
 \\author{{{autor}}}
 \\date{{\\today}}
 \\maketitle
@@ -131,11 +128,15 @@ if st.button("🚀 Generar Todo con Foto Circular"):
 \\section{{Introducción}}
 {intro}
 
-\\section{{Desarrollo}}
+\\section{{Análisis y Resultados}}
+La expresión matemática analizada se define como:
 \\[ {latex_res} \\]
 
 \\section{{Conclusiones}}
 {conclu}
+
+\\section{{Recomendaciones}}
+{recom}
 
 \\end{{document}}"""
 
