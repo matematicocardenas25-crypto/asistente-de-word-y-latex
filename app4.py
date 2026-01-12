@@ -7,9 +7,8 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import matplotlib.pyplot as plt
 import numpy as np
 import io
-import os
 
-st.set_page_config(page_title="Calculo Pro: Compilador Científico", layout="wide")
+st.set_page_config(page_title="Calculo Pro: Compilador de Élite", layout="wide")
 
 def hacer_circulo(imagen_path):
     try:
@@ -31,140 +30,113 @@ def hacer_circulo(imagen_path):
 
 # --- BARRA LATERAL ---
 with st.sidebar:
-    st.header("📋 Configuración")
+    st.header("📋 Configuración Profesional")
     titulo = st.text_input("Título del Proyecto", "Análisis de Funciones y Cálculo Diferencial")
-    autor_predeterminado = "Ismael Antonio Cárdenas, Licenciado en Matemáticas, UNAN-León, Nicaragua"
-    autor = st.text_input("Autor del Proyecto", autor_predeterminado)
-    st.info("Sube 'perfil.jpeg' para ver tu foto en la portada.")
+    autor = st.text_input("Autor del Proyecto", "Ismael Antonio Cárdenas, Licenciado en Matemáticas, UNAN-León")
+    st.info("Asegúrate de tener 'perfil.jpeg' en el directorio.")
 
-st.title("🎓 Compilador Educativo: Vista Previa Científica")
+st.title("🎓 Sistema de Producción de Contenidos Científicos")
 
-# LÓGICA DE TEXTOS CIENTÍFICOS AUTOMATIZADOS (Se definen arriba para usarlos en la vista previa)
-intro_gen = f"La presente investigación técnica, centrada en el estudio de '{titulo}', constituye una aproximación formal a las estructuras matemáticas contemporáneas. Bajo la autoría del {autor}, este documento sistematiza los principios teóricos fundamentales y su correlación con la fenomenología gráfica, garantizando un rigor deductivo en la transición de la abstracción analítica a la representación digital."
-conclu_gen = f"Tras el análisis riguroso de '{titulo}', se establece que la convergencia entre el cálculo simbólico y la visualización paramétrica permite una comprensión holística de los puntos críticos y el comportamiento asintótico."
-recom_gen = f"Para optimizar el proceso de aprendizaje vinculado a '{titulo}', se recomienda al investigador un contraste dialéctico entre los algoritmos computacionales y los métodos de demostración clásica."
+# --- LÓGICA DE TEXTOS CIENTÍFICOS (Alta Calidad) ---
+intro_formal = f"El presente compendio técnico, enfocado en '{titulo}', constituye una sistematización rigurosa de los fundamentos analíticos de las ciencias exactas. Bajo la supervisión del {autor}, este documento articula la abstracción algebraica con la fenomenología visual, proporcionando un entorno de aprendizaje basado en la precisión deductiva."
+conclu_formal = f"Tras el estudio exhaustivo de '{titulo}', se establece que la modelación matemática digital permite una comprensión unificada de las estructuras asintóticas y el comportamiento de las funciones. La integración de estas herramientas eleva la calidad del análisis pedagógico contemporáneo."
+recom_formal = f"Se insta al investigador a realizar un contraste crítico entre la resolución analítica manual y la verificación computacional presentada en este análisis de '{titulo}'. La práctica constante de los ejercicios propuestos es imperativa para la consolidación del pensamiento lógico-matemático."
 
-# --- DISEÑO DE COLUMNAS PARA ENTRADA ---
-col_input, col_preview = st.columns([1, 1.2])
+# --- INTERFAZ DE USUARIO ---
+col_in, col_pre = st.columns([1, 1.2])
 
-with col_input:
-    st.subheader("🛠️ Entrada de Datos")
+with col_in:
+    st.subheader("📥 Carga de Material")
     
-    # 1. OCR
-    uploaded_file = st.file_uploader("1. Sube el ejercicio resuelto", type=["png", "jpg", "jpeg"])
+    # OCR Principal
+    file_ocr = st.file_uploader("1. Imagen del Ejercicio Resuelto (OCR)", type=["png", "jpg", "jpeg"])
     latex_res = ""
-    if uploaded_file:
-        img = Image.open(uploaded_file)
+    if file_ocr:
+        img = Image.open(file_ocr)
         model = LatexOCR()
         latex_res = model(img)
-    
-    # 2. Gráfica
-    func_input = st.text_input("2. Función matemática:", "np.cos(x)")
+        st.latex(latex_res)
+
+    # Gráfica
+    func_in = st.text_input("2. Expresión Matemática (Gráfica):", "np.sin(x)/x")
     buf_graf = io.BytesIO()
     try:
-        x_vals = np.linspace(-10, 10, 1000)
-        y_vals = eval(func_input.replace('^', '**'), {"x": x_vals, "np": np})
-        fig, ax = plt.subplots(figsize=(5, 4))
-        ax.plot(x_vals, y_vals, color='blue', linewidth=2)
-        ax.spines['left'].set_position('zero')
-        ax.spines['bottom'].set_position('zero')
-        ax.spines['right'].set_color('none')
-        ax.spines['top'].set_color('none')
-        ax.grid(True, linestyle='--', alpha=0.5)
-        plt.tight_layout()
-        fig.savefig(buf_graf, format='png')
-        buf_graf.seek(0)
-    except:
-        st.warning("Escribiendo función...")
+        x = np.linspace(-10, 10, 1000)
+        y = eval(func_in.replace('^', '**'), {"x": x, "np": np})
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot(x, y, color='darkblue', linewidth=1.5)
+        ax.axhline(0, color='black', lw=1); ax.axvline(0, color='black', lw=1)
+        ax.grid(True, linestyle=':', alpha=0.6)
+        fig.savefig(buf_graf, format='png'); buf_graf.seek(0)
+    except: pass
 
-    # 3. Ejercicios
-    texto_ejercicios = st.text_area("3. Enunciados (Escribe 'Fuente: Stewart'):", 
-                                    "1. Calcule la derivada según Stewart.\n2. Determine puntos críticos (Fuente: Larson).")
+    # EJERCICIOS PROPUESTOS (Texto y Múltiples capturas)
+    st.markdown("---")
+    st.subheader("📝 Ejercicios Propuestos")
+    texto_props = st.text_area("Enunciados adicionales:", "Determine el dominio y rango de la función presentada.")
     
-    img_ejercicios = st.file_uploader("4. Capturas de apoyo", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    # Opción para subir o pegar imágenes
+    imgs_props = st.file_uploader("Sube o PEGA capturas de pantalla aquí", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
     list_img_buf = []
-    if img_ejercicios:
-        for file in img_ejercicios:
-            img_p = Image.open(file)
+    if imgs_props:
+        for f in imgs_props:
+            img_p = Image.open(f)
+            st.image(img_p, width=150)
             b = io.BytesIO(); img_p.save(b, format="PNG"); b.seek(0)
             list_img_buf.append(b)
 
-with col_preview:
-    st.subheader("👁️ Vista Previa del Documento")
+with col_pre:
+    st.subheader("👁️ Pre-compilación Científica")
     with st.container(border=True):
-        # Simulación de la hoja
-        st.markdown(f"<div style='text-align: right;'><b>{autor}</b></div>", unsafe_allow_html=True)
-        st.markdown(f"<h1 style='text-align: center;'>{titulo}</h1>", unsafe_allow_html=True)
-        
-        st.markdown("### 1. Introducción Formal")
-        st.write(intro_gen)
-        
-        st.markdown("### 2. Desarrollo y Gráfica")
-        if latex_res: st.latex(latex_res)
-        if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf, use_container_width=True)
-        
-        st.markdown("### 3. Ejercicios Propuestos")
-        st.write(texto_ejercicios)
-        
-        st.markdown("---")
-        st.caption("Nota: Las conclusiones y bibliografía se generan automáticamente en el archivo final.")
+        st.markdown(f"<p style='text-align:right;'><b>{autor}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
+        st.write("**Introducción:** " + intro_formal[:150] + "...")
+        if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf, caption="Visualización del Modelo")
+        st.write("**Ejercicios:** " + texto_props)
 
-# --- BOTONES DE DESCARGA ---
-st.divider()
-if st.button("🚀 Compilar y Generar Archivos Finales (Word & LaTeX)"):
-    # Lógica de bibliografía
-    fuentes_db = {
-        "stewart": "Stewart, J. (2015). Cálculo de una variable: Trascendentes tempranas. Cengage Learning.",
-        "larson": "Larson, R., & Edwards, B. H. (2017). Cálculo (11a ed.). Cengage Learning.",
-        "leithold": "Leithold, L. (1998). El Cálculo (7a ed.). Oxford University Press.",
-        "piskunov": "Piskunov, N. (1977). Cálculo Diferencial e Integral. Editorial Mir.",
-        "spivak": "Spivak, M. (2006). Calculus (3ra ed.). Reverté."
-    }
-    bib_detectada = [cita for clave, cita in fuentes_db.items() if clave in texto_ejercicios.lower()]
-    if not bib_detectada: bib_detectada.append("Recursos digitales generados mediante Asistente de IA Matemática.")
+# --- COMPILACIÓN FINAL ---
+if st.button("🚀 Generar Documentos de Alta Calidad"):
+    # Bibliografía Automática
+    f_db = {"stewart": "Stewart, J. (2015). Cálculo. Cengage.", "larson": "Larson, R. (2017). Cálculo. Cengage."}
+    bibs = [v for k, v in f_db.items() if k in (texto_props + " " + titulo).lower()]
+    if not bibs: bibs = ["Material didáctico original diseñado para fines académicos."]
 
-    # --- GENERACIÓN WORD ---
+    # --- WORD ---
     doc = Document()
-    seccion = doc.sections[0]
-    seccion.different_first_page_header_footer = True
-    header = seccion.first_page_header
-    p_h = header.paragraphs[0]; p_h.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     f_circ = hacer_circulo('perfil.jpeg')
-    if f_circ: p_h.add_run().add_picture(f_circ, width=Inches(1.2))
+    if f_circ: 
+        header = doc.sections[0].first_page_header
+        header.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        header.paragraphs[0].add_run().add_picture(f_circ, width=Inches(1.1))
     
     doc.add_heading(titulo, 0)
-    doc.add_paragraph(f"Elaborado por: {autor}").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_heading('Introducción Formal', 1); doc.add_paragraph(intro_gen)
-    doc.add_heading('Análisis Matemático', 1); doc.add_paragraph(latex_res)
-    doc.add_picture(buf_graf, width=Inches(5))
-    doc.add_heading('Consolidación Práctica', 1); doc.add_paragraph(texto_ejercicios)
-    for b_img in list_img_buf: doc.add_picture(b_img, width=Inches(4))
-    doc.add_heading('Conclusiones Académicas', 1); doc.add_paragraph(conclu_gen)
-    doc.add_heading('Recomendaciones Metodológicas', 1); doc.add_paragraph(recom_gen)
-    doc.add_page_break(); doc.add_heading('Referencias Bibliográficas (APA)', 1)
-    for cita in bib_detectada: doc.add_paragraph(cita)
+    doc.add_heading('Introducción Formal', 1).style.font.size = Pt(14)
+    doc.add_paragraph(intro_formal)
+    doc.add_heading('Desarrollo Analítico', 1)
+    doc.add_paragraph(latex_res)
+    doc.add_picture(buf_graf, width=Inches(4.5))
+    doc.add_heading('Ejercicios Propuestos', 1)
+    doc.add_paragraph(texto_props)
+    for b in list_img_buf: doc.add_picture(b, width=Inches(3.5))
+    doc.add_heading('Conclusiones Académicas', 1); doc.add_paragraph(conclu_formal)
+    doc.add_heading('Referencias Bibliográficas (APA)', 1)
+    for b in bibs: doc.add_paragraph(b)
     
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
 
-    # --- GENERACIÓN LATEX ---
-    citas_latex = "\\begin{itemize}\n" + "\n".join([f"\\item {c}" for c in bib_detectada]) + "\n\\end{itemize}"
-    latex_file = f"""\\documentclass{{article}}
+    # --- LATEX ---
+    c_lat = "\\begin{itemize}\n" + "\n".join([f"\\item {c}" for c in bibs]) + "\n\\end{itemize}"
+    latex_str = f"""\\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage{{amsmath, graphicx, tikz}}
 \\begin{{document}}
-\\begin{{tikzpicture}}[remember picture,overlay]
-\\node[anchor=north east, xshift=-1cm, yshift=-1.5cm] at (current page.north east) {{
-    \\begin{{tikzpicture}} \\clip [circle] (0,0) circle (1.5cm); \\node at (0,0) {{\\includegraphics[width=3cm]{{perfil.jpeg}}}}; \\end{{tikzpicture}}
-}};
-\\end{{tikzpicture}}
-\\title{{\\textbf{{{titulo}}}}} \\author{{Elaborado por: \\\\ {autor}}} \\maketitle
-\\section{{Introducción Formal}} {intro_gen}
+\\title{{\\textbf{{{titulo}}}}} \\author{{{autor}}} \\maketitle
+\\section{{Introducción Formal}} {intro_formal}
 \\section{{Análisis Técnico}} $ {latex_res} $ 
-\\section{{Consolidación Práctica}} {texto_ejercicios.replace('\\n', ' \\\\ ')}
-\\section{{Conclusiones}} {conclu_gen}
-\\newpage
-\\section{{Bibliografía (APA)}} {citas_latex}
+\\section{{Propuestas}} {texto_props.replace('\\n', ' \\\\ ')}
+\\section{{Conclusiones}} {conclu_formal}
+\\section{{Bibliografía}} {c_lat}
 \\end{{document}}"""
 
     st.download_button("⬇️ Descargar Word", w_io, f"{titulo}.docx")
-    st.download_button("⬇️ Descargar LaTeX", latex_file, f"{titulo}.tex")
+    st.download_button("⬇️ Descargar LaTeX", latex_str, f"{titulo}.tex")
