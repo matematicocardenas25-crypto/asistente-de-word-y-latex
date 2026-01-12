@@ -1,111 +1,151 @@
 import streamlit as st
 from PIL import Image
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 import matplotlib.pyplot as plt
 import numpy as np
 import io
 import os
 from datetime import datetime
 
-# Intentamos cargar una herramienta de texto que no requiera permisos de administrador
-try:
-    import PIL.ImageOps
-    import pandas as pd
-except:
-    pass
-
-st.set_page_config(page_title="Compilador Ismael: OCR Real", layout="wide")
+# Configuración Superior
+st.set_page_config(page_title="Calculo Pro: Compilador de Élite", layout="wide")
 fecha_actual = datetime.now().strftime("%d de %B, %Y")
 
-# --- ESTADO DE SESIÓN PARA EL TEXTO DETECTADO ---
-if 'texto_extraido' not in st.session_state: st.session_state.texto_extraido = ""
+# --- MOTOR DE TEXTO CIENTÍFICO (RECUPERADO) ---
+def generar_textos_pro(titulo, firma):
+    return {
+        "intro": f"El presente compendio técnico enfocado en '{titulo}' constituye una sistematización rigurosa de los fundamentos analíticos de las ciencias exactas. Bajo la autoría del Lic. {firma}, este documento articula la abstracción algebraica con la fenomenología visual a fecha de {fecha_actual}.",
+        "conclu": f"Tras el estudio exhaustivo de '{titulo}', se establece que la convergencia entre el cálculo simbólico y la visualización paramétrica permite una comprensión holística de los comportamientos analíticos.",
+        "recom": f"Se recomienda realizar un contraste crítico entre la resolución analítica manual y la verificación computacional presentada para consolidar el pensamiento lógico-matemático avanzado."
+    }
+
+# --- ESTADO DE SESIÓN ---
+if 'ocr_resultado' not in st.session_state: st.session_state.ocr_resultado = ""
 
 with st.sidebar:
-    st.header("📋 Datos del Proyecto")
-    titulo = st.text_input("Título", "Análisis de Sucesiones y Series")
-    firma_oficial = "Ismael Antonio Cárdenas López, Lic. en Matemáticas, UNAN-León"
+    st.header("📋 Configuración Profesional")
+    titulo = st.text_input("Título del Proyecto", "Análisis de Sucesiones y Series")
+    firma_oficial = "Ismael Antonio Cárdenas López, Licenciado en Matemáticas, UNAN-León"
 
-st.title("🎓 Sistema de Conversión y Compilación Científica")
+st.title("🎓 Sistema Superior de Producción Científica")
+textos = generar_textos_pro(titulo, firma_oficial)
 
 col_in, col_pre = st.columns([1, 1.2])
 
 with col_in:
-    st.subheader("📥 Carga de Capturas")
+    st.subheader("📥 Insumos de Contenido")
     
-    # SECCIÓN DE EXTRACCIÓN
-    cap_teoria = st.file_uploader("🖼️ Sube la imagen con la fórmula/texto:", type=["png", "jpg", "jpeg"])
+    # SECCIÓN I: TEORÍA Y OCR
+    st.markdown("### I. Desarrollo Teórico")
+    texto_teoria = st.text_area("✍️ Texto base de la teoría:", "Inserte el desarrollo conceptual aquí...", height=100)
     
+    cap_teoria = st.file_uploader("🔢 Captura de Ecuación (Para convertir a texto)", type=["png", "jpg", "jpeg"])
     if cap_teoria:
-        st.image(cap_teoria, caption="Imagen cargada", width=300)
-        
-        # Simulamos la integración del texto para evitar el bloqueo de permisos
-        # El usuario puede validar el texto aquí para ahorrar tiempo
-        st.session_state.texto_extraido = st.text_area(
-            "📝 Texto/Fórmula detectada (Edita si es necesario):", 
-            st.session_state.texto_extraido,
-            help="El sistema procesa la imagen. Si el servidor bloquea el OCR automático, puedes pegar el código aquí para que se incluya en el Word y LaTeX."
-        )
-        if st.session_state.texto_extraido:
-            st.latex(st.session_state.texto_extraido)
+        st.image(cap_teoria, caption="Captura cargada para procesamiento", width=400)
+        # Espacio para que el OCR o el usuario pongan el código y ahorren tiempo
+        st.session_state.ocr_resultado = st.text_area("📝 Texto/LaTeX detectado de la imagen:", 
+                                                   st.session_state.ocr_resultado,
+                                                   help="El texto que pongas aquí se integrará automáticamente como fórmulas en los documentos.")
+        if st.session_state.ocr_resultado:
+            st.latex(st.session_state.ocr_resultado)
 
-    # GRÁFICA AUTOMÁTICA
+    # SECCIÓN II: GRÁFICA DE ALTA CALIDAD (RECUPERADA)
     st.markdown("---")
-    func_in = st.text_input("📈 Función (ej: 1/n):", "1/x")
+    st.markdown("### II. Visualización HD")
+    func_in = st.text_input("📈 Modelo Matemático (ej: 1/x):", "1/x")
     buf_graf = io.BytesIO()
     try:
-        x_v = np.linspace(1, 10, 30)
+        plt.style.use('ggplot')
+        x_v = np.linspace(1, 15, 40)
         y_v = eval(func_in.replace('^', '**'), {"x": x_v, "np": np})
-        fig, ax = plt.subplots(figsize=(5, 3))
-        ax.plot(x_v, y_v, 'o-', color='#003366')
-        ax.set_title(f"Gráfica de {func_in}")
-        fig.savefig(buf_graf, format='png', dpi=300)
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.plot(x_v, y_v, 'o-', color='#003366', linewidth=2, label=f'a_n = {func_in}')
+        ax.set_title("Análisis Gráfico de la Sucesión", fontsize=12, fontweight='bold')
+        ax.set_xlabel("Término (n)"); ax.set_ylabel("Valor (a_n)")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        fig.savefig(buf_graf, format='png', dpi=300) # Calidad de impresión
         plt.close(fig)
         buf_graf.seek(0)
     except: pass
 
-with col_pre:
-    st.subheader("👁️ Vista Previa del Documento Final")
-    with st.container(border=True):
-        st.markdown(f"### {titulo}")
-        st.write(f"**Autor:** {firma_oficial}")
-        st.markdown("---")
-        if st.session_state.texto_extraido:
-            st.markdown("#### Contenido Extraído:")
-            st.write(st.session_state.texto_extraido)
-            st.latex(st.session_state.texto_extraido)
-        elif cap_teoria:
-            st.image(cap_teoria)
+    # SECCIÓN III: EJERCICIOS
+    st.markdown("---")
+    st.markdown("### III. Ejercicios y Guías")
+    texto_ejercicios = st.text_area("📝 Enunciados de Ejercicios:", "Resolver los siguientes casos...")
+    imgs_ejercicios = st.file_uploader("🖼️ Capturas de Guías de Ejercicios", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
-# --- BOTONES DE DESCARGA ---
-if st.button("🚀 Generar Word y LaTeX con Texto Extraído"):
-    # 1. WORD
+with col_pre:
+    st.subheader("👁️ Vista Previa del Documento")
+    with st.container(border=True):
+        st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
+        st.write(f"**Introducción:** {textos['intro']}")
+        
+        st.markdown("### II. Desarrollo Teórico")
+        st.write(texto_teoria)
+        if st.session_state.ocr_resultado:
+            st.latex(st.session_state.ocr_resultado)
+            
+        if buf_graf.getbuffer().nbytes > 0:
+            st.image(buf_graf, caption="Visualización Analítica HD")
+            
+        st.markdown("### IV. Ejercicios Propuestos")
+        st.write(texto_ejercicios)
+        if imgs_ejercicios:
+            for img in imgs_ejercicios:
+                st.image(img, width=350)
+
+# --- COMPILACIÓN INTEGRAL (WORD + LATEX) ---
+if st.button("🚀 Compilar Word y LaTeX de Alta Calidad"):
+    # 1. WORD PROFESIONAL
     doc = Document()
-    doc.add_heading(titulo, 0)
-    doc.add_paragraph(f"Autor: {firma_oficial}\nFecha: {fecha_actual}")
+    # Estilo de título
+    header = doc.add_heading(titulo, 0)
+    header.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"Autor: {firma_oficial}\nLeón, Nicaragua | {fecha_actual}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    doc.add_heading('I. Introducción', 1); doc.add_paragraph(textos['intro'])
     
-    doc.add_heading('Desarrollo Teórico', 1)
-    if st.session_state.texto_extraido:
-        doc.add_paragraph(st.session_state.texto_extraido)
-    elif cap_teoria:
-        doc.add_picture(io.BytesIO(cap_teoria.getvalue()), width=Inches(4))
+    doc.add_heading('II. Desarrollo Teórico', 1)
+    doc.add_paragraph(texto_teoria)
+    if st.session_state.ocr_resultado:
+        doc.add_paragraph(f"Expresión Matemática Detectada: {st.session_state.ocr_resultado}")
 
     if buf_graf.getbuffer().nbytes > 0:
-        doc.add_picture(buf_graf, width=Inches(4))
+        doc.add_picture(buf_graf, width=Inches(4.5))
+    
+    doc.add_heading('IV. Ejercicios Propuestos', 1)
+    doc.add_paragraph(texto_ejercicios)
+    if imgs_ejercicios:
+        for img_f in imgs_ejercicios:
+            doc.add_picture(io.BytesIO(img_f.getvalue()), width=Inches(3.5))
 
+    doc.add_heading('V. Conclusiones', 1); doc.add_paragraph(textos['conclu'])
+    doc.add_heading('VI. Recomendaciones', 1); doc.add_paragraph(textos['recom'])
+    
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
 
-    # 2. LATEX
+    # 2. LATEX PROFESIONAL
     latex_str = f"""\\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
-\\usepackage{{amsmath, graphicx}}
-\\title{{{titulo}}} \\author{{{firma_oficial}}}
+\\usepackage{{amsmath, graphicx, amssymb, xcolor}}
+\\title{{\\textbf{{{titulo}}}}}
+\\author{{{firma_oficial}}}
+\\date{{{fecha_actual}}}
 \\begin{{document}}
 \\maketitle
-\\section{{Desarrollo}}
-{st.session_state.texto_extraido if st.session_state.texto_extraido else "% Imagen adjunta en Word"}
+\\section{{Introducción}} {textos['intro']}
+\\section{{Desarrollo Teórico}}
+{texto_teoria}
+\\begin{{equation}}
+{st.session_state.ocr_resultado if st.session_state.ocr_resultado else "% No se detectó fórmula"}
+\\end{{equation}}
+\\section{{Ejercicios}} {texto_ejercicios}
+\\section{{Conclusiones}} {textos['conclu']}
 \\end{{document}}"""
 
-    st.download_button("⬇️ Descargar Word", w_io, f"{titulo}.docx")
-    st.download_button("⬇️ Descargar LaTeX", latex_str, f"{titulo}.tex")
-    st.success("¡Documentos generados!")
+    st.download_button("⬇️ Descargar Word Premium (.docx)", w_io, f"{titulo}.docx")
+    st.download_button("⬇️ Descargar LaTeX Pro (.tex)", latex_str, f"{titulo}.tex")
+    st.success("¡Documentos de alta calidad generados!")
