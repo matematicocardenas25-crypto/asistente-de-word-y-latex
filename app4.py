@@ -82,10 +82,13 @@ with st.sidebar:
     titulo = st.text_input("Título del Proyecto", "Análisis de Sucesiones y Series")
     firma_oficial = "Ismael Antonio Cárdenas López, Licenciado en Matemáticas, UNAN-León, Nicaragua"
     st.write(f"📅 **Fecha:** {fecha_actual}")
-    st.info("Asegúrate de tener 'perfil.jpeg' en el directorio.")
 
 st.title("🎓 Sistema Superior de Producción Científica")
 textos = generar_textos_robustos(titulo, firma_oficial)
+
+# Inicializar estado para el resultado OCR si no existe
+if 'latex_transcrito' not in st.session_state:
+    st.session_state.latex_transcrito = ""
 
 col_in, col_pre = st.columns([1, 1.2])
 
@@ -94,13 +97,15 @@ with col_in:
     texto_teoria = st.text_area("✍️ Teoría (Desarrollo Conceptual):", "Inserte el fundamento teórico aquí...")
     
     file_ocr = st.file_uploader("🔢 Captura de Ecuación (OCR)", type=["png", "jpg", "jpeg"])
-    latex_res = ""
+    
     if file_ocr:
         model = cargar_modelo_ocr()
         if model:
-            with st.spinner("Analizando sintaxis..."):
-                latex_res = model(Image.open(file_ocr))
-            st.latex(latex_res)
+            with st.spinner("Transcribiendo captura..."):
+                # Se guarda en session_state para que persista en la compilación
+                st.session_state.latex_transcrito = model(Image.open(file_ocr))
+            st.success("¡Ecuación detectada con éxito!")
+            st.latex(st.session_state.latex_transcrito)
 
     st.markdown("---")
     func_in = st.text_input("📈 Función/Sucesión (ej: 1/x):", "x**2")
@@ -125,7 +130,9 @@ with col_pre:
         st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
         st.write(f"**Introducción:** {textos['intro']}")
         if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf)
-        if latex_res: st.latex(latex_res)
+        if st.session_state.latex_transcrito:
+            st.markdown("**Análisis Matemático Detectado:**")
+            st.latex(st.session_state.latex_transcrito)
 
 # --- COMPILACIÓN ---
 if st.button("🚀 Compilar Material de Élite"):
@@ -149,8 +156,12 @@ if st.button("🚀 Compilar Material de Élite"):
 
     doc.add_heading('I. Introducción', 1); doc.add_paragraph(textos['intro'])
     doc.add_heading('II. Desarrollo Teórico', 1); doc.add_paragraph(texto_teoria)
-    if latex_res:
-        doc.add_heading('III. Desarrollo Analítico', 1); doc.add_paragraph(latex_res)
+    
+    # Se agrega la transcripción al documento Word
+    if st.session_state.latex_transcrito:
+        doc.add_heading('III. Desarrollo Analítico', 1)
+        doc.add_paragraph(st.session_state.latex_transcrito)
+        
     if buf_graf.getbuffer().nbytes > 0: doc.add_picture(buf_graf, width=Inches(4.5))
     
     doc.add_heading('IV. Ejercicios Propuestos', 1); doc.add_paragraph(texto_ejercicios)
@@ -166,6 +177,9 @@ if st.button("🚀 Compilar Material de Élite"):
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
 
     # --- LATEX ---
+    # Se asegura que la transcripción esté dentro de entornos matemáticos
+    latex_final = f"$$ {st.session_state.latex_transcrito} $$" if st.session_state.latex_transcrito else ""
+    
     bib_latex = "\n".join([f"\\item {b}" for b in bibliografia])
     latex_str = f"""\\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
@@ -175,7 +189,7 @@ if st.button("🚀 Compilar Material de Élite"):
 \\title{{\\textbf{{{titulo}}}}} \\author{{{firma_oficial}}} \\date{{{fecha_actual}}} \\maketitle
 \\section{{Introducción}} {textos['intro']}
 \\section{{Teoría}} {texto_teoria}
-\\section{{Análisis}} $$ {latex_res} $$
+\\section{{Análisis}} {latex_final}
 \\section{{Gráfica}}
 \\begin{{center}} \\begin{{tikzpicture}}
 \\begin{{axis}}[axis lines=middle, grid=major]
@@ -189,4 +203,4 @@ if st.button("🚀 Compilar Material de Élite"):
 
     st.download_button("⬇️ Descargar Word Premium", w_io, f"{titulo}.docx")
     st.download_button("⬇️ Descargar LaTeX Científico", latex_str, f"{titulo}.tex")
-    st.success("¡Documentos generados con éxito!")
+    st.success("¡Información de captura integrada y documentos generados!")
