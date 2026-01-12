@@ -11,6 +11,7 @@ import os
 
 st.set_page_config(page_title="Calculo Pro: Formato Académico", layout="wide")
 
+# --- FUNCIÓN PARA LA FOTO CIRCULAR ---
 def hacer_circulo(imagen_path):
     try:
         img = Image.open(imagen_path).convert("RGBA")
@@ -29,11 +30,14 @@ def hacer_circulo(imagen_path):
     except:
         return None
 
+# --- BARRA LATERAL ---
 with st.sidebar:
     st.header("📋 Configuración")
     titulo = st.text_input("Título del Proyecto", "Análisis de Funciones y Cálculo Diferencial")
-    autor = st.text_input("Nombre del Autor", "Tu Nombre")
-    st.info("Asegúrate de que 'perfil.jpeg' esté en tu GitHub.")
+    # Nombre actualizado según tu solicitud
+    autor_predeterminado = "Ismael Antonio Cárdenas, Licenciado en Matemáticas, UNAN-León, Nicaragua"
+    autor = st.text_input("Autor del Proyecto", autor_predeterminado)
+    st.info("Asegúrate de que 'perfil.jpeg' esté en tu GitHub para que aparezca tu foto.")
 
 st.title("🎓 Generador Académico: Word + LaTeX (Premium)")
 
@@ -71,13 +75,12 @@ with col2:
 st.divider()
 if st.button("🚀 Generar Todo con Formato Elegante"):
     # TEXTOS ELEGANTES
-    intro = f"El presente estudio, titulado '{titulo}', constituye un análisis riguroso de los principios fundamentales del cálculo. A través de la integración de herramientas de visión computacional para la digitalización de expresiones matemáticas y la representación gráfica de alta precisión, se busca profundizar en el comportamiento asintótico y estructural de las funciones analizadas por {autor}."
+    intro = f"El presente estudio, titulado '{titulo}', constituye un análisis riguroso de los principios fundamentales del cálculo. A través de la integración de herramientas de visión computacional para la digitalización de expresiones matemáticas y la representación gráfica de alta precisión, se busca profundizar en el comportamiento asintótico y estructural de las funciones analizadas por el {autor}."
     conclu = "Se concluye que la convergencia entre el análisis analítico y la representación visual computarizada permite una comprensión holística de las propiedades de la función. La precisión en la transcripción de caracteres matemáticos y el centrado riguroso de los ejes coordenados son esenciales para una interpretación académica correcta."
     recom = "Se recomienda emplear este marco metodológico para la documentación de procesos de ingeniería y ciencias exactas, asegurando siempre la calibración de los parámetros de visualización para capturar la esencia de las discontinuidades y puntos críticos de las funciones."
 
-    # --- WORD: FOTO SOLO EN PRIMERA HOJA ---
+    # --- WORD: CONFIGURACIÓN PROFESIONAL ---
     doc = Document()
-    # Usamos secciones para que la foto solo esté en la primera página
     seccion = doc.sections[0]
     seccion.different_first_page_header_footer = True
     header = seccion.first_page_header
@@ -86,11 +89,11 @@ if st.button("🚀 Generar Todo con Formato Elegante"):
     
     foto_circular = hacer_circulo('perfil.jpeg')
     if foto_circular:
-        run = p_header.add_run()
-        run.add_picture(foto_circular, width=Inches(1.2))
+        run_foto = p_header.add_run()
+        run_foto.add_picture(foto_circular, width=Inches(1.2))
     
     doc.add_heading(titulo, 0)
-    p_autor = doc.add_paragraph(f"Por: {autor}")
+    p_autor = doc.add_paragraph(f"Elaborado por: {autor}")
     p_autor.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
     doc.add_heading('Introducción', 1); doc.add_paragraph(intro)
@@ -103,14 +106,14 @@ if st.button("🚀 Generar Todo con Formato Elegante"):
 
     word_io = io.BytesIO(); doc.save(word_io); word_io.seek(0)
     
-    # --- LATEX: FOTO SOLO EN PRIMERA HOJA ---
+    # --- LATEX: CONFIGURACIÓN PROFESIONAL ---
     latex_file = f"""\\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage{{amsmath, graphicx, tikz}}
 
 \\begin{{document}}
 
-% Foto circular solo en la portada (esquina superior derecha)
+% Foto circular solo en la portada
 \\begin{{tikzpicture}}[remember picture,overlay]
 \\node[anchor=north east, xshift=-1cm, yshift=-1.5cm] at (current page.north east) {{
     \\begin{{tikzpicture}}
@@ -121,7 +124,7 @@ if st.button("🚀 Generar Todo con Formato Elegante"):
 \\end{{tikzpicture}}
 
 \\title{{\\textbf{{{titulo}}}}}
-\\author{{{autor}}}
+\\author{{Elaborado por: {autor}}}
 \\date{{\\today}}
 \\maketitle
 
