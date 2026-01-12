@@ -7,127 +7,117 @@ import matplotlib.pyplot as plt
 import numpy as np
 import io
 
-# Configuración de página
-st.set_page_config(page_title="Generador Académico Pro", layout="wide")
+# Configuración profesional
+st.set_page_config(page_title="Editor Académico Pro", layout="wide")
+st.title("🚀 Generador Automático: Word + LaTeX")
 
-st.title("🎓 Sistema Automatizado de Proyectos de Cálculo")
-st.markdown("Generación de documentos Word y LaTeX con IA.")
-
-# --- DATOS DEL AUTOR ---
+# --- PANEL DE CONTROL ---
 with st.sidebar:
-    st.header("👤 Información del Autor")
-    nombre_proyecto = st.text_input("Título del Proyecto", "Análisis de Funciones Complejas")
-    autor = st.text_input("Nombre Completo", "Tu Nombre Aquí")
-    fecha = st.date_input("Fecha de Entrega")
+    st.header("📋 Datos del Documento")
+    titulo = st.text_input("Título del Proyecto", "Estudio de Cálculo Integral")
+    autor = st.text_input("Nombre del Autor", "Tu Nombre")
+    st.info("Asegúrate de tener el archivo 'perfil.png' en tu GitHub para la foto.")
 
-# --- PROCESAMIENTO DE IMAGEN (OCR) ---
-st.header("1. Captura y Reconocimiento de Fórmulas")
-archivo_imagen = st.file_uploader("Sube la foto del libro o ejercicio", type=["png", "jpg", "jpeg"])
+# --- ENTRADA DE DATOS ---
+col1, col2 = st.columns(2)
 
-latex_extraido = ""
-if archivo_imagen:
-    img = Image.open(archivo_imagen)
-    st.image(img, caption="Imagen cargada", width=400)
-    with st.spinner("IA analizando fórmula..."):
+with col1:
+    st.subheader("1. Escaneo de Imagen")
+    foto_libro = st.file_uploader("Sube la fórmula del libro", type=["png", "jpg", "jpeg"])
+    latex_resultado = ""
+    if foto_libro:
+        img = Image.open(foto_libro)
+        st.image(img, caption="Imagen detectada", width=300)
         modelo = LatexOCR()
-        latex_extraido = modelo(img)
-    st.success("Fórmula detectada:")
-    st.latex(latex_extraido)
+        latex_resultado = modelo(img)
+        st.code(latex_resultado, language='latex')
 
-# --- GENERACIÓN DE GRÁFICA ---
-st.header("2. Visualización Matemática")
-funcion_str = st.text_input("Escribe la función para la gráfica (ej: x**3 - 2*x)", "x**2")
-
-fig, ax = plt.subplots(figsize=(8, 4))
-x = np.linspace(-10, 10, 500)
-try:
-    y = eval(funcion_str.replace('^', '**'))
-    ax.plot(x, y, label=f"f(x) = {funcion_str}", color='darkorange', linewidth=2)
-    ax.axhline(0, color='black', lw=1)
-    ax.axvline(0, color='black', lw=1)
-    ax.grid(True, linestyle='--')
+with col2:
+    st.subheader("2. Gráfica Automática")
+    func_input = st.text_input("Función a graficar (ej: x**2)", "x**2")
+    x = np.linspace(-10, 10, 400)
+    y = eval(func_input.replace('^', '**'))
+    fig, ax = plt.subplots()
+    ax.plot(x, y, color='blue', label=f"f(x)={func_input}")
+    ax.grid(True)
     ax.legend()
     st.pyplot(fig)
     
     # Guardar gráfica para los archivos
-    buf_grafica = io.BytesIO()
-    fig.savefig(buf_grafica, format='png')
-    buf_grafica.seek(0)
-except:
-    st.error("Error en la sintaxis de la función.")
+    buf_graf = io.BytesIO()
+    fig.savefig(buf_graf, format='png')
+    buf_graf.seek(0)
 
-# --- GENERACIÓN DE TEXTOS AUTOMÁTICOS ---
-introduccion = f"El presente trabajo académico titulado '{nombre_proyecto}' ha sido elaborado por {autor}. Se centra en la digitalización de expresiones matemáticas y el análisis gráfico computacional para fortalecer el aprendizaje del cálculo."
-conclusiones = "Se concluye que la integración de herramientas de OCR permite una transición eficiente entre el material impreso y el digital, reduciendo errores de transcripción en fórmulas complejas."
-recomendaciones = "Se recomienda el uso de este sistema para la creación de portafolios digitales, asegurando que las gráficas mantengan una escala adecuada para la interpretación de límites y derivadas."
+# --- TEXTOS AUTOMÁTICOS ---
+intro = f"Este proyecto, desarrollado por {autor}, presenta un análisis detallado sobre {titulo}, integrando herramientas digitales para la transcripción de fórmulas y visualización matemática avanzada."
+conclu = "Se determina que el uso de tecnologías OCR y generación dinámica de gráficas optimiza el tiempo de creación de reportes técnicos y reduce el error humano en la transcripción de datos complejos."
+recomen = "Se recomienda ampliar este modelo para incluir cálculo multivariable y asegurar que las capturas de imagen tengan iluminación óptima para mejorar la precisión del reconocimiento de caracteres."
 
-# --- BOTONES DE DESCARGA ---
-st.header("3. Exportar Documentos")
-col_word, col_latex = st.columns(2)
+# --- GENERACIÓN DE ARCHIVOS ---
+st.divider()
+st.header("📥 Descargar Resultados")
+c1, c2 = st.columns(2)
 
-# --- LÓGICA WORD ---
-with col_word:
-    if st.button("📝 Generar Word"):
+# GENERAR WORD
+with c1:
+    if st.button("📦 Crear Documento Word"):
         doc = Document()
-        doc.add_heading(nombre_proyecto, 0)
-        doc.add_paragraph(f"Autor: {autor}\nFecha: {fecha}")
+        doc.add_heading(titulo, 0)
+        doc.add_paragraph(f"Autor: {autor}")
         
-        # Insertar Foto de Perfil
+        # Insertar tu foto perfil.png
         try:
-            doc.add_picture('perfil.png', width=Inches(1.2))
+            doc.add_picture('perfil.png', width=Inches(1.5))
         except:
-            doc.add_paragraph("[Foto de perfil no encontrada en el repositorio]")
+            doc.add_paragraph("[Error: No se encontró el archivo perfil.png en GitHub]")
 
         doc.add_heading('Introducción', level=1)
-        doc.add_paragraph(introduccion)
+        doc.add_paragraph(intro)
         
-        doc.add_heading('Desarrollo Matemático', level=1)
-        doc.add_paragraph(f"Fórmula identificada: {latex_extraido}")
-        doc.add_picture(buf_grafica, width=Inches(5))
+        doc.add_heading('Desarrollo y Gráficas', level=1)
+        doc.add_paragraph(f"Fórmula detectada: {latex_resultado}")
+        doc.add_picture(buf_graf, width=Inches(5))
         
         doc.add_heading('Conclusiones', level=1)
-        doc.add_paragraph(conclusiones)
+        doc.add_paragraph(conclu)
         
         doc.add_heading('Recomendaciones', level=1)
-        doc.add_paragraph(recomendaciones)
+        doc.add_paragraph(recomen)
         
-        buf_word = io.BytesIO()
-        doc.save(buf_word)
-        buf_word.seek(0)
-        
-        st.download_button("Descargar .DOCX", buf_word, f"{nombre_proyecto}.docx")
+        target_word = io.BytesIO()
+        doc.save(target_word)
+        target_word.seek(0)
+        st.download_button("Descargar Word (.docx)", target_word, f"{titulo}.docx")
 
-# --- LÓGICA LATEX ---
-with col_latex:
-    if st.button("⚛️ Generar Código LaTeX"):
-        codigo_tex = f"""
+# GENERAR LATEX
+with c2:
+    if st.button("⚛️ Crear Código LaTeX"):
+        tex_code = f"""
 \\documentclass{{article}}
 \\usepackage[utf8]{{inputenc}}
-\\usepackage{{graphicx}}
 \\usepackage{{amsmath}}
+\\usepackage{{graphicx}}
 
-\\title{{{nombre_proyecto}}}
+\\title{{{titulo}}}
 \\author{{{autor}}}
-\\date{{{fecha}}}
+\\date{{\\today}}
 
 \\begin{{document}}
 \\maketitle
 
 \\section{{Introducción}}
-{introduccion}
+{intro}
 
-\\section{{Desarrollo}}
-La expresión analizada es:
-\\begin{{equation}}
-{latex_extraido}
-\\end{{equation}}
+\\section{{Análisis Matemático}}
+La fórmula procesada es:
+\\[ {latex_resultado} \\]
 
 \\section{{Conclusiones}}
-{conclusiones}
+{conclu}
 
 \\section{{Recomendaciones}}
-{recomendaciones}
+{recomen}
 
 \\end{{document}}
         """
-        st.download_button("Descargar .TEX", codigo_tex, f"{nombre_proyecto}.tex")
+        st.download_button("Descargar LaTeX (.tex)", tex_code, f"{titulo}.tex")
