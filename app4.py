@@ -7,8 +7,12 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import matplotlib.pyplot as plt
 import numpy as np
 import io
+from datetime import datetime
 
 st.set_page_config(page_title="Calculo Pro: Compilador de Élite", layout="wide")
+
+# Fecha automatizada para el encabezado
+fecha_actual = datetime.now().strftime("%d de %B, %Y")
 
 # --- FUNCIÓN DE PERFIL CIRCULAR ---
 def hacer_circulo(imagen_path):
@@ -42,12 +46,13 @@ with st.sidebar:
     st.header("📋 Configuración Profesional")
     titulo = st.text_input("Título del Proyecto", "Análisis de Funciones y Cálculo Diferencial")
     firma_oficial = "Ismael Antonio Cárdenas López, Licenciado en Matemáticas, UNAN-León, Nicaragua"
+    st.write(f"📅 **Fecha:** {fecha_actual}")
     st.info(f"Autor: {firma_oficial}")
 
 st.title("🎓 Sistema Superior de Producción Científica")
 
-# Textos Automáticos Robustos
-intro_formal = f"El presente compendio técnico enfocado en '{titulo}' constituye una sistematización rigurosa de los fundamentos analíticos de las ciencias exactas. Bajo la autoría del Lic. {firma_oficial}, este documento articula la abstracción algebraica con la fenomenología visual."
+# Textos Automáticos Robustos con Tildes Preservadas
+intro_formal = f"El presente compendio técnico enfocado en '{titulo}' constituye una sistematización rigurosa de los fundamentos analíticos de las ciencias exactas. Bajo la autoría del Lic. {firma_oficial}, este documento articulara la abstracción algebraica con la fenomenología visual a fecha de {fecha_actual}."
 conclu_formal = f"Tras el estudio exhaustivo de '{titulo}', se establece que la convergencia entre el cálculo simbólico y la visualización paramétrica permite una comprensión holística de los comportamientos analíticos analizados."
 recom_formal = f"Se recomienda realizar un contraste crítico entre la resolución analítica manual y la verificación computacional presentada para consolidar el pensamiento lógico-matemático."
 
@@ -84,7 +89,7 @@ with col_in:
 with col_pre:
     st.subheader("👁️ Vista Previa de Alta Gama")
     with st.container(border=True):
-        st.markdown(f"<p style='text-align:right;'><b>{firma_oficial}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:right;'><b>{firma_oficial}</b><br>{fecha_actual}</p>", unsafe_allow_html=True)
         st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
         st.write(f"**Introducción:** {intro_formal[:150]}...")
         if buf_graf.getbuffer().nbytes > 0:
@@ -98,18 +103,26 @@ with col_pre:
 if st.button("🚀 Compilar Documentos"):
     bibliografia = detectar_bibliografia(texto_teoria + " " + texto_ejercicios)
     
-    # --- WORD ---
+    # --- WORD (CONFIGURACIÓN DE PRIMERA HOJA) ---
     doc = Document()
+    
+    # Sección para manejar encabezado solo en primera página
+    seccion = doc.sections[0]
+    seccion.different_first_page_header_footer = True
+    
     f_circ = hacer_circulo('perfil.jpeg')
     if f_circ:
-        header = doc.sections[0].header
-        header.is_linked_to_previous = False # Solo primera página
+        header = seccion.first_page_header
         p = header.paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
         p.add_run().add_picture(f_circ, width=Inches(1.1))
+        p.add_run(f"\n{fecha_actual}").font.size = Pt(9)
 
     doc.add_heading(titulo, 0)
-    doc.add_paragraph(f"Autor: {firma_oficial}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_autor = doc.add_paragraph(f"Autor: {firma_oficial}")
+    p_autor.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_autor.add_run(f"\nLeón, Nicaragua | {fecha_actual}").italic = True
+
     doc.add_heading('I. Introducción', 1); doc.add_paragraph(intro_formal)
     doc.add_heading('II. Desarrollo Teórico', 1); doc.add_paragraph(texto_teoria)
     if latex_res:
@@ -136,7 +149,11 @@ if st.button("🚀 Compilar Documentos"):
 \\usepackage{{amsmath, graphicx, pgfplots, amssymb}}
 \\pgfplotsset{{compat=1.18}}
 \\begin{{document}}
-\\title{{\\textbf{{{titulo}}}}} \\author{{{firma_oficial}}} \\maketitle
+\\title{{\\textbf{{{titulo}}}}} 
+\\author{{{firma_oficial}}} 
+\\date{{{fecha_actual}}}
+\\maketitle
+
 \\section{{Introducción}} {intro_formal}
 \\section{{Teoría}} {texto_teoria}
 \\section{{Análisis}} $$ {latex_res} $$
@@ -152,6 +169,6 @@ if st.button("🚀 Compilar Documentos"):
 \\section{{Bibliografía}} \\begin{{itemize}} {bib_latex} \\end{{itemize}}
 \\end{{document}}"""
 
-    st.download_button("⬇️ Descargar Word", w_io, f"{titulo}.docx")
-    st.download_button("⬇️ Descargar LaTeX", latex_str, f"{titulo}.tex")
-    st.success("¡Documentos generados exitosamente!")
+    st.download_button("⬇️ Descargar Word Premium", w_io, f"{titulo}.docx")
+    st.download_button("⬇️ Descargar LaTeX Científico", latex_str, f"{titulo}.tex")
+    st.success(f"¡Documentos generados para el {fecha_actual}!")
