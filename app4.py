@@ -90,7 +90,7 @@ if st.button("🚀 Generar Todo con Foto Circular"):
     p = header_section.paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     run = p.add_run()
-    foto_circular = hacer_circulo('perfil.png')
+    foto_circular = hacer_circulo('perfil.jpeg')
     if foto_circular:
         run.add_picture(foto_circular, width=Inches(1))
     
