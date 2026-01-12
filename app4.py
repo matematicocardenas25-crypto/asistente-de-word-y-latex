@@ -29,7 +29,6 @@ def hacer_circulo(imagen_path):
     except: return None
 
 def detectar_bibliografia(texto):
-    # Base de datos de referencias APA 7ma Edición
     db = {
         "stewart": "Stewart, J. (2020). Cálculo de una variable: Trascendentes tempranas (9na ed.). Cengage Learning.",
         "larson": "Larson, R., & Edwards, B. H. (2022). Cálculo (12va ed.). Cengage Learning.",
@@ -66,12 +65,13 @@ with col_in:
     file_ocr = st.file_uploader("🔢 Captura de Ejercicio (OCR)", type=["png", "jpg", "jpeg"])
     latex_res = ""
     if file_ocr:
-        model = LatexOCR()
-        latex_res = model(Image.open(file_ocr))
+        with st.spinner("Analizando sintaxis matemática..."):
+            model = LatexOCR()
+            latex_res = model(Image.open(file_ocr))
         st.latex(latex_res)
 
     st.markdown("---")
-    func_in = st.text_input("📈 Función detectada en captura (ej: x**3):", "x**2")
+    func_in = st.text_input("📈 Función para Gráfica (ej: x**3):", "x**2")
     buf_graf = io.BytesIO()
     try:
         x_v = np.linspace(-10, 10, 500)
@@ -88,82 +88,14 @@ with col_in:
     imgs_ejercicios = st.file_uploader("🖼️ Capturas de Apoyo", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
     list_img_buf = [io.BytesIO(f.getvalue()) for f in imgs_ejercicios] if imgs_ejercicios else []
 
-# --- COMPILACIÓN ---
-if st.button("🚀 Compilar Material Profesional"):
-    bibliografia = detectar_bibliografia(texto_teoria + " " + texto_ejercicios)
-    
-    # --- WORD (PRIMERA HOJA CON PERFIL) ---
-    doc = Document()
-    f_circ = hacer_circulo('perfil.jpeg')
-    
-    # Configurar Encabezado solo primera página (vía sección)
-    if f_circ:
-        header = doc.sections[0].header
-        header.is_linked_to_previous = False
-        p = header.paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p.add_run().add_picture(f_circ, width=Inches(1.1))
-
-    doc.add_heading(titulo, 0)
-    p_firma = doc.add_paragraph()
-    run_f = p_firma.add_run(f"Autor: {firma_oficial}")
-    run_f.italic = True
-    run_f.font.size = Pt(10)
-    p_firma.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-    doc.add_heading('I. Introducción', 1); doc.add_paragraph(intro_formal)
-    doc.add_heading('II. Fundamento Teórico', 1); doc.add_paragraph(texto_teoria)
-    doc.add_heading('III. Desarrollo Analítico', 1); doc.add_paragraph(latex_res)
-    if buf_graf.getbuffer().nbytes > 0: doc.add_picture(buf_graf, width=Inches(4.5))
-    
-    doc.add_heading('IV. Ejercicios Propuestos', 1); doc.add_paragraph(texto_ejercicios)
-    for b in list_img_buf: doc.add_picture(b, width=Inches(3.5))
-    
-    doc.add_heading('V. Conclusiones', 1); doc.add_paragraph(conclu_formal)
-    doc.add_heading('VI. Recomendaciones', 1); doc.add_paragraph(recom_formal)
-    
-    doc.add_page_break()
-    doc.add_heading('Referencias Bibliográficas (APA)', 1)
-    for bib in bibliografia: doc.add_paragraph(bib, style='List Bullet')
-    
-    w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
-
-    # --- LATEX (AJUSTE PGFPLOTS PROFESIONAL) ---
-    bib_latex = "\\begin{itemize}\n" + "\n".join([f"\\item {b}" for b in bibliografia]) + "\n\\end{itemize}"
-    latex_str = f"""\\documentclass{{article}}
-\\usepackage[utf8]{{inputenc}}
-\\usepackage{{amsmath, graphicx, pgfplots, amssymb, geometry}}
-\\geometry{{a4paper, margin=1in}}
-\\pgfplotsset{{compat=1.18}}
-\\begin{{document}}
-\\title{{\\textbf{{{titulo}}}}} 
-\\author{{{firma_oficial}}}
-\\date{{\\today}}
-\\maketitle
-
-\\section{{Introducción}} {intro_formal}
-\\section{{Teoría}} {texto_teoria}
-\\section{{Análisis Matemático}} $$ {latex_res} $$
-
-\\section{{Gráfica de la Función}}
-\\begin{{center}}
-\\begin{{tikzpicture}}
-\\begin{{axis}}[
-    axis lines=middle, grid=major, 
-    xlabel=$x$, ylabel=$y$,
-    title={{$f(x) = {func_in}$}},
-    domain=-5:5, samples=100,
-    ]
-    \\addplot[blue, ultra thick] {{{func_in.replace('np.', '')}}};
-\\end{{axis}}
-\\end{{tikzpicture}}
-\\end{{center}}
-
-\\section{{Ejercicios Propuestos}} {texto_ejercicios.replace('\\n', ' \\\\ ')}
-\\section{{Conclusiones}} {conclu_formal}
-\\section{{Bibliografía (APA)}} {bib_latex}
-\\end{{document}}"""
-
-    st.download_button("⬇️ Word Premium", w_io, f"{titulo}.docx")
-    st.download_button("⬇️ LaTeX Científico", latex_str, f"{titulo}.tex")
-    st.success("¡Documento de alta jerarquía generado!")
+with col_pre:
+    st.subheader("👁️ Vista Previa de Alta Gama")
+    with st.container(border=True):
+        st.markdown(f"<p style='text-align:right;'><b>{firma_oficial}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
+        
+        st.markdown("### I. Introducción")
+        st.write(intro_formal)
+        
+        if buf_graf.getbuffer().nbytes > 0:
+            st.image(buf_graf,
