@@ -37,7 +37,7 @@ with st.sidebar:
 
 st.title("🎓 Sistema de Producción de Contenidos Científicos")
 
-# --- LÓGICA DE TEXTOS CIENTÍFICOS (Alta Calidad) ---
+# --- LÓGICA DE TEXTOS CIENTÍFICOS ---
 intro_formal = f"El presente compendio técnico, enfocado en '{titulo}', constituye una sistematización rigurosa de los fundamentos analíticos de las ciencias exactas. Bajo la supervisión del {autor}, este documento articula la abstracción algebraica con la fenomenología visual, proporcionando un entorno de aprendizaje basado en la precisión deductiva."
 conclu_formal = f"Tras el estudio exhaustivo de '{titulo}', se establece que la modelación matemática digital permite una comprensión unificada de las estructuras asintóticas y el comportamiento de las funciones. La integración de estas herramientas eleva la calidad del análisis pedagógico contemporáneo."
 recom_formal = f"Se insta al investigador a realizar un contraste crítico entre la resolución analítica manual y la verificación computacional presentada en este análisis de '{titulo}'. La práctica constante de los ejercicios propuestos es imperativa para la consolidación del pensamiento lógico-matemático."
@@ -48,8 +48,8 @@ col_in, col_pre = st.columns([1, 1.2])
 with col_in:
     st.subheader("📥 Carga de Material")
     
-    # OCR Principal
-    file_ocr = st.file_uploader("1. Imagen del Ejercicio Resuelto (OCR)", type=["png", "jpg", "jpeg"])
+    # 1. OCR Principal
+    file_ocr = st.file_uploader("1. Imagen del Ejercicio Resuelto (OCR)", type=["png", "jpg", "jpeg"], key="ocr_upload")
     latex_res = ""
     if file_ocr:
         img = Image.open(file_ocr)
@@ -57,7 +57,7 @@ with col_in:
         latex_res = model(img)
         st.latex(latex_res)
 
-    # Gráfica
+    # 2. Gráfica
     func_in = st.text_input("2. Expresión Matemática (Gráfica):", "np.sin(x)/x")
     buf_graf = io.BytesIO()
     try:
@@ -70,33 +70,47 @@ with col_in:
         fig.savefig(buf_graf, format='png'); buf_graf.seek(0)
     except: pass
 
-    # EJERCICIOS PROPUESTOS (Texto y Múltiples capturas)
+    # 3. EJERCICIOS PROPUESTOS (Texto y Múltiples capturas)
     st.markdown("---")
     st.subheader("📝 Ejercicios Propuestos")
     texto_props = st.text_area("Enunciados adicionales:", "Determine el dominio y rango de la función presentada.")
     
-    # Opción para subir o pegar imágenes
-    imgs_props = st.file_uploader("Sube o PEGA capturas de pantalla aquí", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    # ÁREA DE PEGADO Y SUBIDA
+    st.write("📸 **Capturas de Ejercicios:**")
+    tab1, tab2 = st.tabs(["Subir Archivos", "Pegar Imagen"])
+    
     list_img_buf = []
-    if imgs_props:
-        for f in imgs_props:
-            img_p = Image.open(f)
-            st.image(img_p, width=150)
+    
+    with tab1:
+        imgs_subidas = st.file_uploader("Selecciona imágenes", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+        if imgs_subidas:
+            for f in imgs_subidas:
+                img_p = Image.open(f)
+                b = io.BytesIO(); img_p.save(b, format="PNG"); b.seek(0)
+                list_img_buf.append(b)
+
+    with tab2:
+        # Nota: 'st.paste_buffer' es una función de entrada de portapapeles
+        img_pegada = st.image_upload("Haz clic aquí y presiona Ctrl+V para pegar", key="paste_area")
+        if img_pegada:
+            img_p = Image.open(img_pegada)
             b = io.BytesIO(); img_p.save(b, format="PNG"); b.seek(0)
             list_img_buf.append(b)
+
+    if list_img_buf:
+        st.success(f"Se han cargado {len(list_img_buf)} imágenes para los ejercicios.")
 
 with col_pre:
     st.subheader("👁️ Pre-compilación Científica")
     with st.container(border=True):
         st.markdown(f"<p style='text-align:right;'><b>{autor}</b></p>", unsafe_allow_html=True)
         st.markdown(f"<h2 style='text-align:center;'>{titulo}</h2>", unsafe_allow_html=True)
-        st.write("**Introducción:** " + intro_formal[:150] + "...")
+        st.markdown(f"**Introducción:** {intro_formal}")
         if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf, caption="Visualización del Modelo")
-        st.write("**Ejercicios:** " + texto_props)
+        st.markdown(f"**Ejercicios adicionales:** {texto_props}")
 
 # --- COMPILACIÓN FINAL ---
 if st.button("🚀 Generar Documentos de Alta Calidad"):
-    # Bibliografía Automática
     f_db = {"stewart": "Stewart, J. (2015). Cálculo. Cengage.", "larson": "Larson, R. (2017). Cálculo. Cengage."}
     bibs = [v for k, v in f_db.items() if k in (texto_props + " " + titulo).lower()]
     if not bibs: bibs = ["Material didáctico original diseñado para fines académicos."]
@@ -110,13 +124,10 @@ if st.button("🚀 Generar Documentos de Alta Calidad"):
         header.paragraphs[0].add_run().add_picture(f_circ, width=Inches(1.1))
     
     doc.add_heading(titulo, 0)
-    doc.add_heading('Introducción Formal', 1).style.font.size = Pt(14)
-    doc.add_paragraph(intro_formal)
-    doc.add_heading('Desarrollo Analítico', 1)
-    doc.add_paragraph(latex_res)
+    doc.add_heading('Introducción Formal', 1); doc.add_paragraph(intro_formal)
+    doc.add_heading('Análisis Matemático', 1); doc.add_paragraph(latex_res)
     doc.add_picture(buf_graf, width=Inches(4.5))
-    doc.add_heading('Ejercicios Propuestos', 1)
-    doc.add_paragraph(texto_props)
+    doc.add_heading('Ejercicios Propuestos', 1); doc.add_paragraph(texto_props)
     for b in list_img_buf: doc.add_picture(b, width=Inches(3.5))
     doc.add_heading('Conclusiones Académicas', 1); doc.add_paragraph(conclu_formal)
     doc.add_heading('Referencias Bibliográficas (APA)', 1)
