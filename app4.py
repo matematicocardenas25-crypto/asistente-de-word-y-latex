@@ -94,19 +94,14 @@ with col_pre:
         
         st.markdown("### II. Desarrollo Teórico")
         if contenido:
-            partes = contenido.split('\n\n')
-            for p in partes:
-                if '$' in p or '\\' in p:
-                    st.latex(p.replace('$', ''))
-                else:
-                    st.write(p)
+            # SOLUCIÓN DEFINITIVA: st.markdown con unsafe_allow_html=False 
+            # reconoce automáticamente el texto mixto con $...$
+            st.markdown(contenido)
         else: st.info("El desarrollo aparecerá aquí.")
         
         if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf)
         st.markdown("### III. Ejercicios Propuestos")
-        for p_ej in ejercicios.split('\n'):
-            if '$' in p_ej: st.latex(p_ej.replace('$', ''))
-            else: st.write(p_ej)
+        st.markdown(ejercicios)
 
         st.markdown("### IV. Conclusiones"); st.write(textos['conclu'])
         st.markdown("### V. Recomendaciones"); st.write(textos['recom'])
@@ -140,7 +135,7 @@ if st.button("🚀 Compilar Word y LaTeX"):
 
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
     
-    # --- LÓGICA LATEX MEJORADA (CON GRÁFICA) ---
+    # --- LÓGICA LATEX ---
     latex_code = f"""
 \\documentclass[12pt]{{article}}
 \\usepackage[utf8]{{inputenc}}
@@ -151,33 +146,16 @@ if st.button("🚀 Compilar Word y LaTeX"):
 \\date{{{fecha_actual}}}
 \\begin{{document}}
 \\maketitle
-
-\\section{{I. Introducción}} 
-{textos['intro']}
-
-\\section{{II. Desarrollo Teórico}} 
-{contenido}
-
-\\begin{{figure}}[h!]
-\\centering
-\\textit{{(Nota: Inserte aquí el archivo de imagen generado por el sistema)}}
-\\caption{{Representación Gráfica del Proyecto}}
-\\end{{figure}}
-
-\\section{{III. Ejercicios Propuestos}} 
-{ejercicios}
-
-\\section{{IV. Conclusiones}} 
-{textos['conclu']}
-
-\\section{{V. Recomendaciones}} 
-{textos['recom']}
-
+\\section{{I. Introducción}} {textos['intro']}
+\\section{{II. Desarrollo Teórico}} {contenido}
+\\section{{III. Ejercicios Propuestos}} {ejercicios}
+\\section{{IV. Conclusiones}} {textos['conclu']}
+\\section{{V. Recomendaciones}} {textos['recom']}
 \\end{{document}}
 """
     l_io = io.StringIO(latex_code)
 
-    # BOTONES DE DESCARGA (TODOS LOS ANTERIORES)
+    # BOTONES DE DESCARGA
     st.download_button("⬇️ Descargar Word Premium", w_io, f"{titulo}.docx")
     st.download_button("⬇️ Descargar Código LaTeX (.tex)", l_io.getvalue(), f"{titulo}.tex")
     
