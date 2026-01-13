@@ -6,119 +6,142 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import matplotlib.pyplot as plt
 import numpy as np
 import io
+import json
 from datetime import datetime
 
-# --- CONFIGURACIÓN E IDENTIDAD ---
+# --- IDENTIDAD Y CONFIGURACIÓN ---
 fecha_actual = datetime.now().strftime("%d de %B, %Y")
 firma_oficial = "Ismael Antonio Cardenas López Licenciado en Matemática Unan León Nicaragua"
 st.set_page_config(page_title="Sistema Ismael Cárdenas - UNAN León", layout="wide")
 
-# --- SISTEMA DE MEMORIA LOCAL (ANTI-APAGONES) ---
-# Esto guarda el texto en la sesión del navegador
-if 'contenido_teorico' not in st.session_state:
-    st.session_state['contenido_teorico'] = ""
-if 'ejercicios_lista' not in st.session_state:
-    st.session_state['ejercicios_lista'] = ""
-
-# --- MOTOR DE REDACCIÓN AUTOMATIZADA Y ROBUSTA ---
-def generar_cuerpo_academico(titulo):
-    # Diccionario con lenguaje matemático elegante y profesional
+# --- MOTOR DE REDACCIÓN ACADÉMICA AUTOMATIZADA (PROFESIONAL Y ELEGANTE) ---
+def generar_textos_robustos(titulo):
     return {
-        "intro": f"El presente estudio técnico titulado '{titulo}' aborda de manera exhaustiva la formalización y el análisis de estructuras fundamentales en las ciencias exactas. A través de una metodología deductiva, se pretende sistematizar los conceptos teóricos y su aplicabilidad práctica, garantizando un rigor académico acorde a los estándares de la UNAN León. Bajo la autoría del Lic. Ismael Cárdenas López, este compendio articula la abstracción simbólica con la verificación fenomenológica, estableciendo una base sólida para el pensamiento lógico-matemático avanzado.",
+        "intro": f"El presente compendio técnico, titulado '{titulo}', constituye una sistematización rigurosa de los fundamentos analíticos y estructurales de las ciencias exactas. Bajo la autoría del Lic. Ismael Cárdenas López, este documento articula la abstracción simbólica con la verificación fenomenológica, estableciendo una base sólida para el pensamiento lógico-matemático avanzado y garantizando un rigor académico acorde a los más altos estándares institucionales de la UNAN León.",
         
-        "conclu": f"Tras el análisis pormenorizado de los elementos expuestos en torno a '{titulo}', se concluye que la convergencia entre el rigor analítico y la modelización computacional permite una comprensión holística de los comportamientos estudiados. La evidencia teórica aquí presentada ratifica la importancia de la precisión axiomática en la resolución de problemas complejos, consolidando así la estructura conceptual necesaria para futuras investigaciones en el área de la matemática pura y aplicada.",
+        "conclu": f"Tras el análisis pormenorizado de los elementos expuestos en torno a '{titulo}', se concluye que la convergencia entre el rigor analítico y la modelización computacional permite una comprensión holística de los comportamientos estudiados. La evidencia teórica aquí presentada ratifica la importancia de la precisión axiomática en la resolución de problemas complejos y la estabilidad de los marcos conceptuales analizados.",
         
-        "recom": "Se recomienda encarecidamente someter los resultados analíticos a un proceso de contraste crítico frente a modelos de simulación numérica para validar su estabilidad. Asimismo, se sugiere profundizar en el estudio de las propiedades intrínsecas de las sucesiones y series aquí abordadas, fomentando la aplicación de estos marcos teóricos en contextos interdisciplinarios que requieran de una alta capacidad de abstracción y síntesis matemática."
+        "recom": "Se recomienda encarecidamente someter los resultados analíticos a un proceso de contraste crítico frente a modelos de simulación numérica para validar su estabilidad. Asimismo, se sugiere profundizar en el estudio de las propiedades intrínsecas de los marcos teóricos aquí abordados, fomentando la aplicación de estos modelos en contextos interdisciplinarios que requieran una alta capacidad de abstracción y síntesis matemática."
     }
 
+# --- PERSISTENCIA DE DATOS (ANTI-REFRESCO) ---
+if 'contenido' not in st.session_state: st.session_state.contenido = ""
+if 'ejercicios' not in st.session_state: st.session_state.ejercicios = ""
+
 st.title("🎓 Compilador Científico de Élite - UNAN León")
-st.warning("🔒 Protección de datos activa: El contenido se mantiene en la sesión del navegador ante recargas accidentales.")
+
+# --- PANEL LATERAL DE RESPALDO ---
+with st.sidebar:
+    st.header("💾 Respaldo de Seguridad")
+    if st.button("📥 Crear Punto de Restauración"):
+        data_respaldo = {"titulo": "Proyecto", "contenido": st.session_state.contenido, "ejercicios": st.session_state.ejercicios}
+        st.download_button("Descargar Respaldo (.json)", json.dumps(data_respaldo), "respaldo_ismael.json")
+    st.info("Si se va la luz, el archivo de respaldo te permitirá recuperar todo instantáneamente.")
 
 col_in, col_pre = st.columns([1, 1.2])
 
 with col_in:
     st.subheader("📥 Panel de Insumos")
-    titulo = st.text_input("Título del Proyecto", "Análisis y Modelado de Sucesiones y Series")
+    titulo_proy = st.text_input("Título del Proyecto", "Análisis y Modelado Matemático")
     
     st.markdown("### I. Desarrollo Teórico")
-    # Vinculamos al session_state para no perder datos
-    raw_contenido = st.text_area("Cuerpo del documento:", value=st.session_state['contenido_teorico'], height=350, placeholder="Pegue la información del PDF aquí...")
-    st.session_state['contenido_teorico'] = raw_contenido
+    cont_input = st.text_area("Cuerpo del Contenido:", value=st.session_state.contenido, height=350, key="area_cont")
+    st.session_state.contenido = cont_input
 
     st.markdown("---")
     st.subheader("📊 Motor Gráfico Matemático")
-    func_in = st.text_input("Función f(x) para graficar:", "np.cos(x) * np.exp(-x/5)")
+    func_in = st.text_input("Función f(x):", "np.sin(x) * np.exp(-x/10)")
     
     buf_graf = io.BytesIO()
     try:
-        plt.style.use('ggplot')
-        x_vals = np.linspace(-5, 15, 500)
+        x_vals = np.linspace(-10, 20, 1000)
         y_vals = eval(func_in, {"x": x_vals, "np": np})
-        fig, ax = plt.subplots(figsize=(7, 4))
-        ax.plot(x_vals, y_vals, color='#003366', linewidth=2, label=f"f(x) = {func_in}")
-        ax.set_title(f"Visualización: {titulo}", fontsize=10)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.plot(x_vals, y_vals, color='#1A5276', linewidth=2, label=f"f(x)={func_in}")
+        ax.set_title(f"Análisis Paramétrico: {titulo_proy}")
+        ax.grid(True, linestyle='--', alpha=0.6)
         ax.legend()
-        ax.grid(True, alpha=0.3)
         fig.savefig(buf_graf, format='png', dpi=300); plt.close(fig); buf_graf.seek(0)
-    except: st.warning("Esperando expresión válida...")
+    except: st.warning("Esperando función válida...")
 
     st.markdown("### II. Ejercicios Propuestos")
-    ejercicios_raw = st.text_area("Ejercicios:", value=st.session_state['ejercicios_lista'], height=200)
-    st.session_state['ejercicios_lista'] = ejercicios_raw
+    ejer_input = st.text_area("Lista de Ejercicios:", value=st.session_state.ejercicios, height=200, key="area_ejer")
+    st.session_state.ejercicios = ejer_input
 
 with col_pre:
     st.subheader("👁️ Vista Previa Institucional")
-    textos = generar_cuerpo_academico(titulo)
+    textos = generar_textos_robustos(titulo_proy)
     with st.container(border=True):
-        st.markdown(f"<div style='text-align: right;'>{fecha_actual}</div>", unsafe_allow_html=True)
-        st.markdown(f"<h2 style='text-align:center; color:#003366;'>{titulo}</h2>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align:center;'><b>{firma_oficial}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align: right;'><b>Fecha:</b> {fecha_actual}</div>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align:center; color:#1A5276;'>{titulo_proy}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center;'><i>{firma_oficial}</i></p>", unsafe_allow_html=True)
         st.markdown("<hr>", unsafe_allow_html=True)
         
-        st.markdown("#### I. Introducción")
+        st.markdown("### 1. Introducción")
         st.write(textos['intro'])
         
-        st.markdown("#### II. Desarrollo Teórico")
-        # st.write mantiene los párrafos si dejas una línea en blanco
-        st.write(st.session_state['contenido_teorico'])
+        st.markdown("### 2. Desarrollo Teórico")
+        st.markdown(st.session_state.contenido)
         
         if buf_graf.getbuffer().nbytes > 0:
-            st.image(buf_graf, caption="Análisis Gráfico Computacional")
+            st.image(buf_graf, caption="Representación Gráfica del Comportamiento Analítico")
         
-        st.markdown("#### III. Ejercicios Propuestos")
-        st.write(st.session_state['ejercicios_lista'])
-
-        st.markdown("#### IV. Conclusiones")
+        st.markdown("### 3. Ejercicios Propuestos")
+        st.markdown(st.session_state.ejercicios)
+        
+        st.markdown("### 4. Conclusiones")
         st.write(textos['conclu'])
         
-        st.markdown("#### V. Recomendaciones")
+        st.markdown("### 5. Recomendaciones")
         st.write(textos['recom'])
 
-# --- GENERACIÓN DE ARCHIVOS (RESURRECCIÓN DE DATOS) ---
-if st.button("🚀 Compilar y Asegurar Documento"):
+# --- GENERACIÓN DE DOCUMENTOS (WORD Y LATEX) ---
+if st.button("🚀 Compilar Documentación de Élite"):
+    textos = generar_textos_robustos(titulo_proy)
+    
+    # 1. GENERACIÓN WORD
     doc = Document()
-    # (Aquí iría tu lógica de la foto circular que ya tienes configurada)
-    doc.add_heading(titulo, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_heading(titulo_proy, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph(firma_oficial).alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    doc.add_heading('I. Introducción', 1)
-    doc.add_paragraph(textos['intro'])
+    secciones_doc = [("I. Introducción", textos['intro']), 
+                     ("II. Desarrollo Teórico", st.session_state.contenido),
+                     ("III. Ejercicios Propuestos", st.session_state.ejercicios),
+                     ("IV. Conclusiones", textos['conclu']),
+                     ("V. Recomendaciones", textos['recom'])]
     
-    doc.add_heading('II. Desarrollo Teórico', 1)
-    doc.add_paragraph(st.session_state['contenido_teorico'])
-    
+    for tit, cont in secciones_doc:
+        doc.add_heading(tit, 1)
+        for parrafo in cont.split('\n\n'):
+            if parrafo.strip(): doc.add_paragraph(parrafo.strip())
+
     if buf_graf.getbuffer().nbytes > 0:
-        doc.add_picture(buf_graf, width=Inches(5))
-    
-    doc.add_heading('III. Ejercicios Propuestos', 1)
-    doc.add_paragraph(st.session_state['ejercicios_lista'])
-    
-    doc.add_heading('IV. Conclusiones', 1)
-    doc.add_paragraph(textos['conclu'])
-    
-    doc.add_heading('V. Recomendaciones', 1)
-    doc.add_paragraph(textos['recom'])
+        doc.add_picture(buf_graf, width=Inches(5.5))
 
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
-    st.download_button("⬇️ Descargar Word Final", w_io, f"{titulo}.docx")
-    st.success("✅ Documento recuperado y generado con éxito.")
+    
+    # 2. GENERACIÓN LATEX (RESTAURADO)
+    latex_code = f"""
+\\documentclass[12pt]{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage[spanish]{{babel}}
+\\usepackage{{amsmath, amssymb, graphicx}}
+\\title{{{titulo_proy}}}
+\\author{{{firma_oficial}}}
+\\date{{{fecha_actual}}}
+\\begin{{document}}
+\\maketitle
+\\section{{I. Introducción}} {textos['intro']}
+\\section{{II. Desarrollo Teórico}} 
+{st.session_state.contenido}
+\\section{{III. Ejercicios Propuestos}}
+{st.session_state.ejercicios}
+\\section{{IV. Conclusiones}} {textos['conclu']}
+\\section{{V. Recomendaciones}} {textos['recom']}
+\\end{{document}}
+"""
+    l_io = io.StringIO(latex_code)
+
+    st.download_button("⬇️ Descargar Word Final", w_io, f"{titulo_proy}.docx")
+    st.download_button("⬇️ Descargar Código LaTeX (.tex)", l_io.getvalue(), f"{titulo_proy}.tex")
+    st.success("¡Documentación técnica compilada con éxito!")
