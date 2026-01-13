@@ -17,12 +17,12 @@ st.set_page_config(page_title="Sistema Ismael Cárdenas - UNAN León", layout="w
 
 # --- PROCESADOR DE TEXTO (FIX PARA PÁRRAFOS) ---
 def procesar_parrafos(texto):
-    # Divide el texto si hay demasiados espacios o si viene de Mathpix con saltos extraños
+    if not texto: return ""
     lineas = texto.split('\n')
     texto_limpio = ""
     for linea in lineas:
         if linea.strip():
-            texto_limpio += linea.strip() + "\n\n" # Asegura doble espacio entre párrafos
+            texto_limpio += linea.strip() + "\n\n" 
     return texto_limpio
 
 # --- PROCESADOR DE IMAGEN (FOTO CIRCULAR) ---
@@ -61,7 +61,6 @@ with col_in:
     raw_contenido = st.text_area("Pegue el contenido de Mathpix aquí:", height=250, 
                                  placeholder="Al pegar, el sistema organizará los párrafos automáticamente...")
     
-    # Procesamos el contenido pegado para que no sea una sola línea
     contenido = procesar_parrafos(raw_contenido)
 
     st.markdown("---")
@@ -95,23 +94,29 @@ with col_pre:
         
         st.markdown("### II. Desarrollo Teórico")
         if contenido:
-            # Dividimos para mostrar LaTeX correctamente por bloques
             partes = contenido.split('\n\n')
             for p in partes:
-                if '$' in p or '\\' in p: st.latex(p.replace('$', ''))
-                else: st.write(p)
+                # Lógica para detectar LaTeX y mostrarlo como tal, o mostrar texto plano
+                if '$' in p or '\\' in p:
+                    st.latex(p.replace('$', ''))
+                else:
+                    st.write(p)
         else: st.info("El desarrollo aparecerá aquí.")
         
         if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf)
-        st.markdown("### III. Ejercicios Propuestos"); st.write(ejercicios)
+        st.markdown("### III. Ejercicios Propuestos")
+        # También habilitamos LaTeX para la sección de ejercicios
+        for p_ej in ejercicios.split('\n'):
+            if '$' in p_ej: st.latex(p_ej.replace('$', ''))
+            else: st.write(p_ej)
+
         st.markdown("### IV. Conclusiones"); st.write(textos['conclu'])
         st.markdown("### V. Recomendaciones"); st.write(textos['recom'])
 
 # --- GENERACIÓN DE DOCUMENTACIÓN ---
 if st.button("🚀 Compilar Word y LaTeX"):
+    # --- LÓGICA WORD ---
     doc = Document()
-    
-    # 1. Foto Circular y Fecha
     section = doc.sections[0]
     section.different_first_page_header_footer = True
     header = section.first_page_header
@@ -121,18 +126,13 @@ if st.button("🚀 Compilar Word y LaTeX"):
     if foto: p_h.add_run().add_picture(foto, width=Inches(0.8))
     p_h.add_run(f"\nFecha: {fecha_actual}").bold = True
 
-    # 2. Título y Firma
     doc.add_heading(titulo, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph(firma_oficial).alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # 3. Secciones con Párrafos Correctos
     doc.add_heading('I. Introducción', 1); doc.add_paragraph(textos['intro'])
-    
     doc.add_heading('II. Desarrollo Teórico', 1)
-    # Insertamos párrafo por párrafo para evitar la línea única en Word
     for p in contenido.split('\n\n'):
-        if p.strip():
-            doc.add_paragraph(p.strip())
+        if p.strip(): doc.add_paragraph(p.strip())
     
     if buf_graf.getbuffer().nbytes > 0: doc.add_picture(buf_graf, width=Inches(4.5))
         
@@ -141,5 +141,29 @@ if st.button("🚀 Compilar Word y LaTeX"):
     doc.add_heading('V. Recomendaciones', 1); doc.add_paragraph(textos['recom'])
 
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
+    
+    # --- LÓGICA LATEX (RESTAURADA) ---
+    latex_code = f"""
+\\documentclass[12pt]{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage[spanish]{{babel}}
+\\usepackage{{amsmath, amssymb, graphicx}}
+\\title{{{titulo}}}
+\\author{{{firma_oficial}}}
+\\date{{{fecha_actual}}}
+\\begin{{document}}
+\\maketitle
+\\section{{I. Introducción}} {textos['intro']}
+\\section{{II. Desarrollo Teórico}} {contenido.replace('$', '$')}
+\\section{{III. Ejercicios Propuestos}} {ejercicios}
+\\section{{IV. Conclusiones}} {textos['conclu']}
+\\section{{V. Recomendaciones}} {textos['recom']}
+\\end{{document}}
+"""
+    l_io = io.StringIO(latex_code)
+
+    # BOTONES DE DESCARGA
     st.download_button("⬇️ Descargar Word Premium", w_io, f"{titulo}.docx")
-    st.success("¡Documento procesado con párrafos correctos!")
+    st.download_button("⬇️ Descargar Código LaTeX (.tex)", l_io.getvalue(), f"{titulo}.tex")
+    
+    st.success("¡Documentos procesados exitosamente!")
