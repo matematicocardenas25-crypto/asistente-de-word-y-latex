@@ -96,7 +96,6 @@ with col_pre:
         if contenido:
             partes = contenido.split('\n\n')
             for p in partes:
-                # Lógica para detectar LaTeX y mostrarlo como tal, o mostrar texto plano
                 if '$' in p or '\\' in p:
                     st.latex(p.replace('$', ''))
                 else:
@@ -105,7 +104,6 @@ with col_pre:
         
         if buf_graf.getbuffer().nbytes > 0: st.image(buf_graf)
         st.markdown("### III. Ejercicios Propuestos")
-        # También habilitamos LaTeX para la sección de ejercicios
         for p_ej in ejercicios.split('\n'):
             if '$' in p_ej: st.latex(p_ej.replace('$', ''))
             else: st.write(p_ej)
@@ -142,7 +140,7 @@ if st.button("🚀 Compilar Word y LaTeX"):
 
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
     
-    # --- LÓGICA LATEX (RESTAURADA) ---
+    # --- LÓGICA LATEX MEJORADA (CON GRÁFICA) ---
     latex_code = f"""
 \\documentclass[12pt]{{article}}
 \\usepackage[utf8]{{inputenc}}
@@ -153,16 +151,33 @@ if st.button("🚀 Compilar Word y LaTeX"):
 \\date{{{fecha_actual}}}
 \\begin{{document}}
 \\maketitle
-\\section{{I. Introducción}} {textos['intro']}
-\\section{{II. Desarrollo Teórico}} {contenido.replace('$', '$')}
-\\section{{III. Ejercicios Propuestos}} {ejercicios}
-\\section{{IV. Conclusiones}} {textos['conclu']}
-\\section{{V. Recomendaciones}} {textos['recom']}
+
+\\section{{I. Introducción}} 
+{textos['intro']}
+
+\\section{{II. Desarrollo Teórico}} 
+{contenido}
+
+\\begin{{figure}}[h!]
+\\centering
+\\textit{{(Nota: Inserte aquí el archivo de imagen generado por el sistema)}}
+\\caption{{Representación Gráfica del Proyecto}}
+\\end{{figure}}
+
+\\section{{III. Ejercicios Propuestos}} 
+{ejercicios}
+
+\\section{{IV. Conclusiones}} 
+{textos['conclu']}
+
+\\section{{V. Recomendaciones}} 
+{textos['recom']}
+
 \\end{{document}}
 """
     l_io = io.StringIO(latex_code)
 
-    # BOTONES DE DESCARGA
+    # BOTONES DE DESCARGA (TODOS LOS ANTERIORES)
     st.download_button("⬇️ Descargar Word Premium", w_io, f"{titulo}.docx")
     st.download_button("⬇️ Descargar Código LaTeX (.tex)", l_io.getvalue(), f"{titulo}.tex")
     
