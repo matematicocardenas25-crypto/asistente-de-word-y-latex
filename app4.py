@@ -2,92 +2,113 @@ import streamlit as st
 import re
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN E IDENTIDAD (UNAN LEÓN) ---
-FECHA_DOC = datetime.now().strftime("%d de %m, %Y")
-FIRMA = "Ismael Antonio Cardenas López Licenciado en Matemática Unan León Nicaragua"
+# --- 1. IDENTIDAD INSTITUCIONAL (2026-01-12) ---
+def obtener_fecha():
+    # Localización manual para asegurar español en el servidor
+    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    f = datetime.now()
+    return f"{f.day} de {meses[f.month-1]}, {f.year}"
 
-st.set_page_config(page_title="Compilador Ismael Cárdenas", layout="wide")
+FECHA_HOY = obtener_fecha()
+IDENTIDAD = "Ismael Antonio Cardenas López Licenciado en Matemática Unan León Nicaragua"
 
-# --- 2. MOTOR DE REDACCIÓN ACADÉMICA ---
-def generar_prosa(titulo):
-    return {
-        "intro": f"El presente compendio técnico enfocado en '{titulo}' constituye una síntesis rigurosa de los principios analíticos fundamentales. Bajo la autoría del Lic. Ismael Cárdenas López, este documento busca formalizar los conceptos matemáticos mediante un lenguaje axiomático preciso para la UNAN León Nicaragua.",
-        "conclu": f"Tras la revisión de los elementos que integran '{titulo}', se concluye que la estructuración lógica permite una resolución eficaz de problemas complejos."
-    }
+st.set_page_config(page_title="Compilador Matemático - Ismael Cárdenas", layout="wide")
 
-# --- 3. MOTOR DE RENDERIZADO (ESTE ARREGLA EL TEXTO PEGADO) ---
-def renderizado_mejorado(texto):
+# --- 2. MOTOR DE PROSA (No quita nada, solo añade) ---
+def generar_introduccion(titulo):
+    return f"El presente compendio técnico enfocado en '{titulo}' constituye una síntesis rigurosa de los principios analíticos fundamentales. Bajo la autoría del Lic. Ismael Cárdenas López, este documento busca formalizar los conceptos matemáticos mediante un lenguaje axiomático preciso para la UNAN León Nicaragua."
+
+# --- 3. PROCESADOR DE TEXTO MIXTO (SOPORTA PÁRRAFOS LARGOS) ---
+def renderizar_guia(texto):
     if not texto: return
-    lineas = texto.split('\n')
-    for linea in lineas:
-        l = linea.strip()
-        if not l: continue
-        
-        # Viñetas de diamante
-        if l.startswith(('-', '*', '•', '◈')):
-            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;◈ {l.lstrip('-*•◈')}")
+    
+    # Dividimos por bloques de párrafos para mantener la estructura de tu Word
+    bloques = texto.split('\n')
+    
+    for bloque in bloques:
+        b = bloque.strip()
+        if not b:
+            st.write("") # Mantiene tus espacios entre párrafos
             continue
-
-        # Cuadros de colores (Teoremas y Ejemplos)
-        if "TEOREMA" in l.upper():
-            st.info(f"📜 **{l}**")
-        elif "EJEMPLO" in l.upper() or "EJERCICIO" in l.upper():
-            st.warning(f"✏️ **{l}**")
-        elif "DEFINICIÓN" in l.upper():
-            st.success(f"📘 **{l}**")
         
-        # PROCESADO DE MATEMÁTICAS (Para que no se corte el texto)
-        elif "$" in l:
-            # Dividimos la línea para que la matemática respire
-            partes = l.split("$")
-            for p in partes:
-                if not p.strip(): continue
-                # Si detectamos símbolos matemáticos, usamos latex() solo para esa parte
-                if any(c in p for c in "=^\\/_+"):
-                    st.latex(p.strip())
-                else:
-                    st.write(p.strip())
+        # Detección de títulos y énfasis (TEOREMA, EJEMPLO, DEFINICIÓN)
+        upper_b = b.upper()
+        if "TEOREMA" in upper_b:
+            st.info(f"📜 **{b}**")
+        elif "EJEMPLO" in upper_b:
+            st.warning(f"✏️ **{b}**")
+        elif "DEFINICIÓN" in upper_b:
+            st.success(f"📘 **{b}**")
+        elif b.startswith(('a.', 'b.', 'c.', 'd.', 'e.', '1.', '2.')):
+            # Formato especial para enumeraciones de ejercicios
+            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;**{b}**")
+        
+        # PROCESADO DE MATEMÁTICAS EN LÍNEA Y BLOQUE
+        elif "$" in b:
+            # Esta parte es vital: separa el texto de la fórmula para que no se pegue
+            partes = re.split(r'(\$\$.*?\$\$|\$.*?\$)', b)
+            cols = st.container()
+            with cols:
+                for p in partes:
+                    if not p: continue
+                    if p.startswith('$$'): # Ecuación centrada
+                        st.latex(p.replace('$$', ''))
+                    elif p.startswith('$'): # Ecuación en línea
+                        # Para evitar que se pegue al texto, le damos un pequeño margen
+                        st.latex(p.replace('$', ''))
+                    else:
+                        st.write(p)
         else:
-            st.write(l)
+            # Texto normal de los párrafos
+            st.write(b)
 
-# --- 4. INTERFAZ ORIGINAL DE DOS COLUMNAS ---
-st.title("🎓 Asistente de Redacción Científica - Lic. Ismael Cárdenas")
+# --- 4. INTERFAZ PROFESIONAL ---
+st.title("🎓 Sistema de Compilación Académica")
 
-col_in, col_pre = st.columns([1, 1.2])
+col_input, col_view = st.columns([1, 1.2])
 
-with col_in:
-    st.subheader("📥 Entrada de Contenido")
-    tema = st.text_input("Título del Proyecto:", "Sucesiones y Series")
-    contenido = st.text_area("Desarrollo (Use $ para fórmulas):", height=400, placeholder="Escriba aquí sus definiciones y ejercicios...")
+with col_input:
+    st.subheader("📥 Entrada de Texto (Copie de su Word)")
+    tema_titulo = st.text_input("Título de la Guía:", "Sucesiones y Series parte 1")
+    contenido_word = st.text_area("Pegue aquí todo el contenido:", height=500, placeholder="Ejemplo: Definición del límite de una sucesión...")
 
-with col_pre:
-    textos = generar_prosa(tema)
-    st.subheader("👁️ Vista Previa Institucional")
+with col_view:
+    st.subheader("👁️ Vista Previa del Documento")
     with st.container(border=True):
-        # Cabecera solicitada
-        st.markdown(f"<div style='text-align:right; font-size:12px;'>{FECHA_DOC}</div>", unsafe_allow_html=True)
-        st.markdown(f"**{FIRMA}**")
-        st.markdown(f"<h1 style='text-align:center;'>{tema}</h1>", unsafe_allow_html=True)
+        # Cabecera según tu instrucción
+        st.markdown(f"<div style='text-align:right; font-size:12px;'>León, Nicaragua. {FECHA_HOY}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='border-left: 5px solid #1A5276; padding-left: 10px; color: #1A5276;'><b>{IDENTIDAD}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{tema_titulo}</h1>", unsafe_allow_html=True)
         st.markdown("---")
         
-        st.markdown("### I. INTRODUCCIÓN")
-        st.write(textos["intro"])
+        # Introducción Automática
+        st.markdown("### I. Introducción")
+        st.write(generar_introduccion(tema_titulo))
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Renderizado del cuerpo
-        renderizado_mejorado(contenido)
+        # Contenido íntegro del usuario
+        renderizar_guia(contenido_word)
         
         st.markdown("<br>---")
-        st.markdown("### IV. CONCLUSIONES")
-        st.write(textos["conclu"])
+        st.caption("Documento generado para fines académicos - Licenciatura en Matemática")
 
-# --- 5. GENERADOR DE CÓDIGO LATEX (BLINDADO) ---
-if st.button("🚀 Obtener Código para Overleaf"):
-    # Usamos concatenación (+) para evitar el error de llaves de las capturas
-    latex_final = r"\documentclass[12pt]{article}" + "\n" + r"\usepackage[spanish]{babel}" + "\n"
-    latex_final += r"\begin{document}" + "\n"
-    latex_final += r"\section{Introducción}" + "\n" + textos["intro"] + "\n"
-    latex_final += r"\section{Desarrollo}" + "\n" + contenido + "\n"
-    latex_final += r"\end{document}"
-    
-    st.code(latex_final, language="latex")
+# --- 5. EXPORTACIÓN A LATEX (CONSTRUCCIÓN SEGURA) ---
+if st.button("🚀 Generar Código LaTeX para Impresión"):
+    # Construcción limpia para evitar SyntaxError
+    codigo_final = r"""\documentclass[12pt]{article}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsthm, geometry}
+\geometry{margin=1in}
+\begin{center}
+    {\Large \textbf{""" + tema_titulo + r"""}} \\
+    """ + IDENTIDAD + r""" \\
+    """ + FECHA_HOY + r"""
+\end{center}
+\section{Introducción}
+""" + generar_introduccion(tema_titulo) + r"""
+\section{Desarrollo}
+""" + contenido_word + r"""
+\end{document}"""
+
+    st.code(codigo_final, language='latex')
