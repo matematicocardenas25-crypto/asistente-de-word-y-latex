@@ -1,102 +1,132 @@
 import streamlit as st
+from PIL import Image, ImageDraw, ImageOps
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+import io
 import re
 from datetime import datetime
 
-# --- 1. IDENTIDAD Y FECHA (Requisitos del Licenciado) ---
-FECHA_HOY = "14 de Enero, 2026" # Basado en tus capturas recientes
-IDENTIDAD = "Ismael Antonio Cardenas López Licenciado en Matemática Unan León Nicaragua"
+# --- 1. CONFIGURACIÓN DE IDENTIDAD (BLINDAJE TOTAL AL INICIO) ---
+def obtener_fecha_espanol():
+    meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
+    ahora = datetime.now()
+    return f"{ahora.day} de {meses.get(ahora.strftime('%B'))}, {ahora.year}"
 
-st.set_page_config(page_title="Compilador Ismael Cárdenas", layout="wide")
+# Definición global para evitar NameError en la vista previa
+fecha_actual = obtener_fecha_espanol()
+firma_line1 = "Ismael Antonio Cardenas López"
+firma_line2 = "Licenciado en Matemática Unan León Nicaragua"
 
-# --- 2. MOTOR DE PROSA ACADÉMICA ---
-def generar_prosa(titulo):
+st.set_page_config(page_title="Sistema Ismael Cárdenas - UNAN León", layout="wide")
+
+# --- 2. MOTOR DE REDACCIÓN ACADÉMICA AUTOMÁTICA ---
+def generar_prosa_profesional(titulo):
     return {
-        "intro": f"El presente compendio técnico enfocado en '{titulo}' constituye una síntesis rigurosa de los principios analíticos fundamentales. Bajo la autoría del Lic. Ismael Cárdenas López, este documento busca formalizar los conceptos matemáticos mediante un lenguaje axiomático preciso para la UNAN León Nicaragua.",
-        "conclu": f"Tras la revisión de los elementos que integran '{titulo}', se concluye que la estructuración lógica permite una resolución eficaz de problemas complejos."
+        "intro": f"El presente compendio técnico, enfocado en '{titulo}', constituye una síntesis rigurosa de los principios analíticos fundamentales. Bajo la autoría del Lic. Ismael Cárdenas López, este documento busca formalizar los conceptos matemáticos mediante un lenguaje axiomático preciso, garantizando la coherencia teórica necesaria para el estudio avanzado en la UNAN León.",
+        "conclu": f"Tras la revisión pormenorizada de los elementos que integran '{titulo}', se concluye que la estructuración lógica de los contenidos permite una transición fluida hacia modelos de mayor complejidad. La evidencia analítica aquí expuesta ratifica la validez de los métodos empleados.",
+        "recom": "Se recomienda integrar estos resultados en esquemas de resolución de problemas interdisciplinarios. Asimismo, es imperativo mantener un contraste constante entre la abstracción simbólica y su verificación empírica para asegurar la robustez de los modelos presentados."
     }
 
-# --- 3. PROCESADOR DE TEXTO MIXTO (EVITA EL TEXTO PEGADO) ---
-def renderizar_matematica_limpia(texto):
-    if not texto: return
-    # Dividimos por saltos de línea para respetar tus párrafos
+# --- 3. MOTOR DE ESTILIZADO (CUADROS ELEGANTES TIPO LIBRO) ---
+def renderizar_cuadros_estilizados(texto):
     lineas = texto.split('\n')
     for linea in lineas:
-        l = linea.strip()
-        if not l:
-            st.write("") # Espacio en blanco
-            continue
-        
-        # Resaltado de secciones importantes (Teoremas, Ejemplos)
-        if any(k in l.upper() for k in ["TEOREMA", "DEFINICIÓN", "EJEMPLO"]):
-            st.markdown(f"#### {l}")
-            continue
-
-        # Detección de matemáticas para que NO se amontonen
-        if "$" in l:
-            # Separamos el texto de las fórmulas
-            partes = re.split(r'(\$\$.*?\$\$|\$.*?\$)', l)
-            for p in partes:
-                if not p: continue
-                if p.startswith('$'):
-                    # Renderizamos la matemática sola para que tenga su espacio
-                    st.latex(p.replace('$', ''))
-                else:
-                    # El texto plano sale normal
-                    st.write(p.strip())
+        if not linea.strip(): continue
+        txt_up = linea.upper()
+        if any(k in txt_up for k in ["TEOREMA", "PROPOSICIÓN"]):
+            st.info(f"✨ **{linea}**") # Azul elegante
+        elif any(k in txt_up for k in ["DEFINICIÓN", "CONCEPTO"]):
+            st.success(f"📘 **{linea}**") # Verde académico
+        elif any(k in txt_up for k in ["EJERCICIO", "EJEMPLO"]):
+            st.warning(f"📝 **{linea}**") # Naranja libro
+        elif "SOLUCIÓN" in txt_up:
+            st.markdown(f"✅ **{linea}**")
         else:
-            st.write(l)
+            st.markdown(linea)
 
-# --- 4. INTERFAZ DE DOS COLUMNAS (RECUPERADA) ---
-st.title("🎓 Sistema Académico Profesional - UNAN León")
+# --- 4. LIMPIEZA AGRESIVA PARA WORD (ELIMINA SÍMBOLOS DE LAS CAPTURAS) ---
+def limpiar_para_word(texto):
+    if not texto: return ""
+    # Reemplazo de símbolos que ensucian tus fotos
+    texto = texto.replace("$", "").replace(r"\dots", "...").replace(r"\cdots", "...")
+    texto = texto.replace(r"\left", "").replace(r"\right", "").replace(r"\,", " ")
+    # Traducción de símbolos comunes a texto legible
+    reemplazos = {
+        r"\infty": "infinito", r"\to": "→", r"\alpha": "α", r"\beta": "β",
+        r"\epsilon": "ε", r"\\": "\n", r"\times": "x", r"\{": "{", r"\}": "}"
+    }
+    # Limpiar fracciones
+    texto = re.sub(r'\\frac\{(.*?)\}\{(.*?)\}', r'(\1/\2)', texto)
+    # Limpiar barras invertidas residuales
+    texto = re.sub(r'\\([a-zA-Z]+)', r'\1', texto)
+    for lat, plain in reemplazos.items():
+        texto = texto.replace(lat, plain)
+    return texto.replace("{", "").replace("}", "").strip()
 
+# --- 5. FOTO CIRCULAR ---
+def preparar_foto():
+    try: img = Image.open("foto.png").convert("RGBA")
+    except:
+        img = Image.new('RGBA', (400, 400), (255, 255, 255, 0))
+        ImageDraw.Draw(img).ellipse((0, 0, 400, 400), fill=(26, 82, 118))
+    mask = Image.new('L', (400, 400), 0)
+    ImageDraw.Draw(mask).ellipse((0, 0, 400, 400), fill=255)
+    output = ImageOps.fit(img, (400, 400), centering=(0.5, 0.5))
+    output.putalpha(mask)
+    buf = io.BytesIO(); output.save(buf, format='PNG'); buf.seek(0)
+    return buf
+
+# --- 6. INTERFAZ ---
+if 'contenido' not in st.session_state: st.session_state.contenido = ""
+if 'ejercicios' not in st.session_state: st.session_state.ejercicios = ""
+
+st.title("🎓 Compilador Ismael Cárdenas - UNAN León")
 col_in, col_pre = st.columns([1, 1.2])
 
 with col_in:
-    st.subheader("📥 Entrada de Contenido")
-    tema = st.text_input("Título del Tema:", "Sucesiones y Series")
-    
-    # Bloques de entrada que pediste de vuelta
-    desarrollo = st.text_area("Desarrollo Teórico (Word/LaTeX):", height=300)
-    ejercicios = st.text_area("Sección de Práctica:", height=200)
+    st.subheader("📥 Insumos Científicos")
+    titulo_proy = st.text_input("Tema de la clase:", "Sucesiones y Series parte 1")
+    st.session_state.contenido = st.text_area("Contenido (LaTeX):", value=st.session_state.contenido, height=350)
+    st.session_state.ejercicios = st.text_area("Ejercicios:", value=st.session_state.ejercicios, height=150)
 
 with col_pre:
-    textos_ia = generar_prosa(tema)
-    st.subheader("👁️ Vista Previa del Documento")
+    st.subheader("👁️ Vista Previa Institucional")
+    textos_pro = generar_prosa_profesional(titulo_proy)
     with st.container(border=True):
-        # Cabecera Institucional
-        st.markdown(f"<div style='text-align:right; font-size:12px;'>{FECHA_HOY}</div>", unsafe_allow_html=True)
-        st.markdown(f"**{IDENTIDAD}**")
-        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{tema}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:right;'><b>Fecha:</b> {fecha_actual}</div>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align:center; color:#1A5276;'>{titulo_proy}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center;'><b>{firma_line1}</b><br><i>{firma_line2}</i></p>", unsafe_allow_html=True)
         st.markdown("---")
-        
-        st.markdown("### I. INTRODUCCIÓN")
-        st.write(textos_ia["intro"])
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # Renderizado de tus textos con el motor de matemática limpia
-        renderizar_matematica_limpia(desarrollo)
-        st.markdown("<br>", unsafe_allow_html=True)
-        renderizar_matematica_limpia(ejercicios)
-        
-        st.markdown("---")
-        st.markdown("### IV. CONCLUSIONES")
-        st.write(textos_ia["conclu"])
+        st.markdown(f"**I. Introducción**\n\n{textos_pro['intro']}")
+        renderizar_cuadros_estilizados(st.session_state.contenido)
+        renderizar_cuadros_estilizados(st.session_state.ejercicios)
+        st.markdown(f"**IV. Conclusiones**\n\n{textos_pro['conclu']}")
 
-# --- 5. GENERADOR DE LATEX Y WORD (CÓDIGO PURO) ---
-st.divider()
-col_btn1, col_btn2 = st.columns(2)
+# --- 7. BOTONES DE COMPILACIÓN ---
+if st.button("🚀 Compilar Documentación de Élite"):
+    textos_pro = generar_prosa_profesional(titulo_proy)
+    
+    # --- WORD (LIMPIEZA TOTAL) ---
+    doc = Document()
+    head = doc.add_table(rows=1, cols=2)
+    head.cell(0,0).text = fecha_actual
+    p_img = head.cell(0,1).add_paragraph()
+    p_img.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p_img.add_run().add_picture(preparar_foto(), width=Inches(0.9))
+    
+    doc.add_heading(titulo_proy, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(firma_line1).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(firma_line2).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    for t, c in [("I. Introducción", textos_pro['intro']), ("II. Contenido", st.session_state.contenido), ("III. Ejercicios", st.session_state.ejercicios), ("IV. Conclusiones", textos_pro['conclu'])]:
+        doc.add_heading(t, 1)
+        doc.add_paragraph(limpiar_para_word(c))
 
-with col_btn1:
-    if st.button("🚀 Generar Código LaTeX (Sin Errores)"):
-        # Construcción manual para evitar el error de llaves de tus capturas
-        latex_final = r"\documentclass[12pt]{article}" + "\n" + r"\usepackage[spanish]{babel}" + "\n"
-        latex_final += r"\begin{document}" + "\n" + r"\title{" + tema + "}\n"
-        latex_final += r"\author{" + IDENTIDAD + "}\n" + r"\maketitle" + "\n"
-        latex_final += r"\section{Contenido}" + "\n" + desarrollo + "\n"
-        latex_final += r"\section{Ejercicios}" + "\n" + ejercicios + "\n"
-        latex_final += r"\end{document}"
-        
-        st.code(latex_final, language="latex")
+    w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
+    st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx")
 
-with col_btn2:
-    st.info("Para exportar a Word: Copia la Vista Previa y pégala directamente en un archivo Word. El formato se mantendrá limpio.")
+    # --- LATEX (ROBUSTO OVERLEAF) ---
+    latex_overleaf = f"\\documentclass[12pt]{{article}}\\usepackage[spanish]{{babel}}\\usepackage{{amsmath,amssymb,tcolorbox}}\\title{{{titulo_proy}}}\\author{{{firma_line1}}}\\begin{{document}}\\maketitle\\section{{Introducción}}{textos_pro['intro']}\\section{{Desarrollo}}{st.session_state.contenido}\\section{{Ejercicios}}{st.session_state.ejercicios}\\end{{document}}"
+    st.download_button("⬇️ Descargar LaTeX (Overleaf)", latex_overleaf, f"{titulo_proy}.tex")
+    st.success("¡Compilación finalizada con éxito!")
