@@ -1,8 +1,10 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 from docx import Document
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 import matplotlib.pyplot as plt
 import numpy as np
 import io
@@ -10,7 +12,7 @@ import json
 import re
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN DE IDENTIDAD (DEFINICIÓN ABSOLUTA AL INICIO) ---
+# --- 1. CONFIGURACIÓN DE IDENTIDAD ---
 def obtener_fecha_espanol():
     meses = {
         "January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril",
@@ -21,14 +23,13 @@ def obtener_fecha_espanol():
     mes_nombre = meses.get(ahora.strftime('%B'), ahora.strftime('%B'))
     return f"{ahora.day} de {mes_nombre}, {ahora.year}"
 
-# Variables de firma globales para evitar NameError en la Vista Previa
 fecha_actual = obtener_fecha_espanol()
 firma_line1 = "Ismael Antonio Cardenas López"
 firma_line2 = "Licenciado en Matemática Unan León Nicaragua"
 
 st.set_page_config(page_title="Sistema Ismael Cárdenas - UNAN León", layout="wide")
 
-# --- 2. MOTOR DE REDACCIÓN ACADÉMICA (LENGUAJE ROBUSTO) ---
+# --- 2. MOTOR DE REDACCIÓN ACADÉMICA ---
 def generar_textos_robustos(titulo):
     return {
         "intro": f"El presente compendio técnico, titulado '{titulo}', constituye una sistematización rigurosa de los fundamentos analíticos y estructurales de las ciencias exactas. Bajo la autoría del Lic. Ismael Cárdenas López, este documento articula la abstracción simbólica con la verificación fenomenológica, estableciendo una base sólida para el pensamiento lógico-matemático avanzado y garantizando un rigor académico acorde a los más altos estándares institucionales de la UNAN León.",
@@ -36,19 +37,25 @@ def generar_textos_robustos(titulo):
         "recom": "Se recomienda encarecidamente someter los resultados analíticos a un proceso de contraste crítico frente a modelos de simulación numérica para validar su estabilidad. Asimismo, se sugiere profundizar en el estudio de las propiedades intrínsecas de los marcos teóricos aquí abordados, fomentando la aplicación de estos modelos en contextos interdisciplinarios."
     }
 
-# --- 3. MOTOR DE LIMPIEZA DE LATEX PARA WORD (ELIMINA $ Y \DOTS) ---
+# --- 3. FUNCIONES DE DISEÑO PARA WORD ---
+def aplicar_formato_cuadro(celda):
+    """Aplica un sombreado gris tenue y bordes a una celda de tabla."""
+    tc = celda._tc
+    tcPr = tc.get_or_add_tcPr()
+    shd = OxmlElement('w:shd')
+    shd.set(qn('w:fill'), "F2F3F4")  # Gris muy claro
+    tcPr.append(shd)
+    
 def limpiar_para_word(texto):
     if not texto: return ""
-    # Eliminar símbolos de dólar y puntos suspensivos de LaTeX
     texto = texto.replace("$", "").replace(r"\dots", "...").replace(r"\cdots", "...")
-    # Reemplazos de comandos comunes
+    # Reemplazo de items por viñetas profesionales (●)
+    texto = texto.replace(r"\item", "● ")
     reemplazos = {
         r"\\left(": "(", r"\\right)": ")", r"\\left[": "[", r"\\right]": "]",
         r"\\infty": "infinito", r"\\times": "x", r"\\cdot": "·", r"\\": "", r"\,": " "
     }
-    # Traducir fracciones \frac{a}{b} -> (a/b)
     texto = re.sub(r'\\frac\{(.*?)\}\{(.*?)\}', r'(\1/\2)', texto)
-    # Eliminar cualquier comando \comando{...} restante
     texto = re.sub(r'\\[a-zA-Z]+\{(.*?)\}', r'\1', texto)
     for lat, plain in reemplazos.items():
         texto = texto.replace(lat, plain)
@@ -72,7 +79,7 @@ def preparar_foto_circular():
     buf.seek(0)
     return buf
 
-# --- 5. PERSISTENCIA DE DATOS ---
+# --- 5. LÓGICA DE STREAMLIT ---
 if 'contenido' not in st.session_state: st.session_state.contenido = ""
 if 'ejercicios' not in st.session_state: st.session_state.ejercicios = ""
 
@@ -89,7 +96,7 @@ col_in, col_pre = st.columns([1, 1.2])
 with col_in:
     st.subheader("📥 Panel de Insumos")
     titulo_proy = st.text_input("Título del Proyecto", "Análisis y Modelado Matemático")
-    st.session_state.contenido = st.text_area("Cuerpo del Contenido (LaTeX):", value=st.session_state.contenido, height=350)
+    st.session_state.contenido = st.text_area("Cuerpo del Contenido (LaTeX):", value=st.session_state.contenido, height=350, placeholder="Escriba aquí sus Teoremas, Definiciones o Axiomas...")
     
     st.subheader("📊 Motor Gráfico")
     func_in = st.text_input("Función f(x):", "np.sin(x) * np.exp(-x/10)")
@@ -137,7 +144,7 @@ if st.button("🚀 Compilar Documentación de Élite"):
     textos = generar_textos_robustos(titulo_proy)
     doc = Document()
     
-    # Encabezado: Foto Circular a la derecha y Fecha a la izquierda
+    # Encabezado: Foto y Fecha
     header_table = doc.add_table(rows=1, cols=2)
     header_table.columns[0].width = Inches(4.5)
     header_table.cell(0, 0).text = fecha_actual
@@ -146,7 +153,7 @@ if st.button("🚀 Compilar Documentación de Élite"):
     celda_foto.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     celda_foto.add_run().add_picture(preparar_foto_circular(), width=Inches(1.0))
 
-    # Título y Firma centrada
+    # Título y Firma
     doc.add_heading('\n' + titulo_proy, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
     f1 = doc.add_paragraph(firma_line1)
     f1.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -154,7 +161,6 @@ if st.button("🚀 Compilar Documentación de Élite"):
     f2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     f2.runs[0].font.italic = True
 
-    # Secciones Combinadas con Limpieza Profunda de LaTeX
     secciones_word = [
         ("I. Introducción", textos['intro']),
         ("II. Desarrollo Teórico", st.session_state.contenido),
@@ -163,20 +169,40 @@ if st.button("🚀 Compilar Documentación de Élite"):
         ("V. Recomendaciones", textos['recom'])
     ]
 
+    palabras_clave = ["Teorema", "Axioma", "Lema", "Definición", "Ejercicio", "Ejemplo", "Solución", "Definicion", "Solucion"]
+
     for tit, cont in secciones_word:
         doc.add_heading(tit, 1)
         texto_limpio = limpiar_para_word(cont)
+        
         for linea in texto_limpio.split('\n'):
-            if linea.strip(): doc.add_paragraph(linea.strip())
+            linea = linea.strip()
+            if not linea: continue
+            
+            # Detectar si la línea empieza con una palabra clave para crear el cuadro
+            if any(linea.startswith(pc) for pc in palabras_clave):
+                tabla_box = doc.add_table(rows=1, cols=1)
+                tabla_box.style = 'Table Grid'
+                celda = tabla_box.rows[0].cells[0]
+                aplicar_formato_cuadro(celda)
+                p = celda.paragraphs[0]
+                run = p.add_run(linea)
+                run.bold = True
+                run.font.color.rgb = RGBColor(26, 82, 118)
+            else:
+                p = doc.add_paragraph(linea)
+                # Aplicar indentación si es una viñeta
+                if linea.startswith("●"):
+                    p.paragraph_format.left_indent = Inches(0.3)
 
     if buf_graf.getbuffer().nbytes > 0:
         doc.add_picture(buf_graf, width=Inches(5.5))
 
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
     
-    # Código LaTeX (Mantiene sus fórmulas intactas)
-    latex_code = f"\\documentclass{{article}}\\usepackage[spanish]{{babel}}\\title{{{titulo_proy}}}\\author{{{firma_line1} \\\\ {firma_line2}}}\\begin{{document}}\\maketitle\n\\section{{I. Introducción}}{textos['intro']}\\section{{II. Desarrollo}}{st.session_state.contenido}\\end{{document}}"
+    # Código LaTeX
+    latex_code = f"\\documentclass{{article}}\\usepackage[spanish]{{babel}}\\usepackage{{tcolorbox}}\\title{{{titulo_proy}}}\\author{{{firma_line1} \\\\ {firma_line2}}}\\begin{{document}}\\maketitle\n\\section{{I. Introducción}}{textos['intro']}\\section{{II. Desarrollo}}{st.session_state.contenido}\\end{{document}}"
     
     st.download_button("⬇️ Descargar Word Final", w_io, f"{titulo_proy}.docx")
     st.download_button("⬇️ Descargar Código LaTeX", latex_code, f"{titulo_proy}.tex")
-    st.success("¡Documentación compilada con éxito!")
+    st.success("¡Documentación de Élite compilada con éxito!")
