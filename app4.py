@@ -3,46 +3,33 @@ from PIL import Image, ImageDraw, ImageOps
 import io
 import re
 from datetime import datetime
-from fpdf import FPDF # Librería para generar el PDF
 
-# --- 1. CONFIGURACIÓN DE IDENTIDAD Y FECHA ---
-def obtener_fecha():
+# --- 1. IDENTIDAD Y FECHA (SIN ERRORES) ---
+def obtener_fecha_espanol():
     meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
     ahora = datetime.now()
     return f"{ahora.day} de {meses.get(ahora.strftime('%B'))}, {ahora.year}"
 
-FECHA_TEXTO = obtener_fecha()
-AUTOR = "Ismael Antonio Cardenas López"
-INFO_AUTOR = "Licenciado en Matemática Unan León Nicaragua"
+FECHA_ACTUAL = obtener_fecha_espanol()
+NOMBRE_FIRMA = "Ismael Antonio Cardenas López"
+CARGO_FIRMA = "Licenciado en Matemática Unan León Nicaragua"
 
 st.set_page_config(page_title="Sistema Ismael Cárdenas", layout="wide")
 
-# --- 2. CLASE PARA GENERAR EL PDF ELEGANTE ---
-class PDF(FPDF):
-    def header(self):
-        self.set_font('Arial', 'B', 10)
-        self.cell(0, 10, f'Fecha: {FECHA_TEXTO}', 0, 1, 'R')
-        self.ln(5)
-
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
-        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
-
-# --- 3. MOTOR DE RENDERIZADO (VISTA PREVIA) ---
-def mostrar_contenido_estilizado(texto):
+# --- 2. MOTOR DE RENDERIZADO (VIÑETAS Y CUADROS) ---
+def renderizar_estilo_academico(texto):
     if not texto: return
     lineas = texto.split('\n')
     for linea in lineas:
         l = linea.strip()
         if not l: continue
         
-        # Detección de Viñetas
-        if l.startswith(('-', '*', '•')) or re.match(r'^[0-9|a-z]\.', l):
-            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;◈ {l.lstrip('-*•')}")
+        # A. Detección de Viñetas (Bullets Elegantes)
+        if l.startswith(('-', '*', '•', '◈')) or re.match(r'^[0-9|a-z]\.', l):
+            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;◈ {l.lstrip('-*•◈')}")
             continue
 
-        # Cuadros Académicos
+        # B. Cuadros Tipo Libro
         up = l.upper()
         if any(k in up for k in ["TEOREMA", "PROPOSICIÓN"]):
             st.info(f"📜 **{l}**")
@@ -51,69 +38,64 @@ def mostrar_contenido_estilizado(texto):
         elif any(k in up for k in ["EJERCICIO", "EJEMPLO"]):
             st.warning(f"✏️ **{l}**")
         else:
-            if "$" in l: st.latex(l.replace("$", ""))
-            else: st.write(l)
+            # C. Renderizado de LaTeX Seguro
+            if "$" in l:
+                st.latex(l.replace("$", ""))
+            else:
+                st.write(l)
 
-# --- 4. INTERFAZ PRINCIPAL ---
-st.title("🎓 Sistema de Compilación Académica - UNAN León")
+# --- 3. INTERFAZ PRINCIPAL ---
+st.title("🎓 Compilador Académico Ismael Cárdenas - UNAN")
 
-if 'txt_teoria' not in st.session_state: st.session_state.txt_teoria = ""
-if 'txt_ejercicios' not in st.session_state: st.session_state.txt_ejercicios = ""
+if 'desarrollo_txt' not in st.session_state: st.session_state.desarrollo_txt = ""
+if 'ejercicios_txt' not in st.session_state: st.session_state.ejercicios_txt = ""
 
-col_izq, col_der = st.columns([1, 1.2])
+col_in, col_pre = st.columns([1, 1.2])
 
-with col_izq:
-    st.subheader("📥 Insumos del Documento")
-    tema = st.text_input("Título del Tema:", "Sucesiones y Series parte 1")
-    st.session_state.txt_teoria = st.text_area("Contenido Teórico:", value=st.session_state.txt_teoria, height=300)
-    st.session_state.txt_ejercicios = st.text_area("Sección de Ejercicios:", value=st.session_state.txt_ejercicios, height=150)
+with col_in:
+    st.subheader("📥 Panel de Insumos")
+    titulo_tema = st.text_input("Título del Documento:", "Sucesiones y Series parte 1")
+    st.session_state.desarrollo_txt = st.text_area("Contenido Teórico (LaTeX):", value=st.session_state.desarrollo_txt, height=350)
+    st.session_state.ejercicios_txt = st.text_area("Sección de Ejercicios:", value=st.session_state.ejercicios_txt, height=150)
 
-with col_der:
+with col_pre:
     st.subheader("👁️ Vista Previa Institucional")
     with st.container(border=True):
-        st.markdown(f"<div style='text-align:right;'>{FECHA_TEXTO}</div>", unsafe_allow_html=True)
-        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{tema}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align:center;'><b>{AUTOR}</b><br><i>{INFO_AUTOR}</i></p>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:right;'>{FECHA_ACTUAL}</div>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{titulo_tema}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center;'><b>{NOMBRE_FIRMA}</b><br><i>{CARGO_FIRMA}</i></p>", unsafe_allow_html=True)
         st.markdown("---")
-        mostrar_contenido_estilizado(st.session_state.txt_teoria)
-        mostrar_contenido_estilizado(st.session_state.txt_ejercicios)
-
-# --- 5. GENERACIÓN DE ARCHIVOS (PDF, LATEX) ---
-st.markdown("### 🚀 Exportar Documentación")
-c1, c2 = st.columns(2)
-
-with c1:
-    if st.button("📄 Generar y Descargar PDF"):
-        pdf = PDF()
-        pdf.add_page()
-        # Título y Autor
-        pdf.set_font('Arial', 'B', 16)
-        pdf.cell(0, 10, tema, 0, 1, 'C')
-        pdf.set_font('Arial', '', 12)
-        pdf.cell(0, 10, AUTOR, 0, 1, 'C')
-        pdf.set_font('Arial', 'I', 10)
-        pdf.cell(0, 10, INFO_AUTOR, 0, 1, 'C')
-        pdf.ln(10)
-        # Contenido
-        pdf.set_font('Arial', '', 11)
-        pdf.multi_cell(0, 10, st.session_state.txt_teoria + "\n" + st.session_state.txt_ejercicios)
         
-        pdf_output = pdf.output(dest='S').encode('latin-1', 'ignore')
-        st.download_button("⬇️ Descargar PDF Final", data=pdf_output, file_name=f"{tema}.pdf", mime="application/pdf")
+        st.markdown("### I. Marco Teórico")
+        renderizar_estilo_academico(st.session_state.desarrollo_txt)
+        st.markdown("### II. Ejercicios y Práctica")
+        renderizar_estilo_academico(st.session_state.ejercicios_txt)
 
-with c2:
-    # Código LaTeX blindado (usando % para escapar llaves si es necesario)
-    latex_code = f"""\\documentclass[12pt]{{article}}
-\\usepackage[spanish]{{babel}}
-\\usepackage{{amsmath, amssymb, tcolorbox}}
-\\title{{{tema}}}
-\\author{{{AUTOR} \\\\ \\small {INFO_AUTOR}}}
-\\date{{{FECHA_TEXTO}}}
-\\begin{{document}}
-\\maketitle
-\\section{{Contenido}}
-{st.session_state.txt_teoria}
-\\section{{Ejercicios}}
-{st.session_state.txt_ejercicios}
-\\end{{document}}"""
-    st.download_button("⬇️ Descargar Código .tex", latex_code, file_name=f"{tema}.tex")
+# --- 4. GENERADOR DE CÓDIGO LATEX (BLINDADO) ---
+if st.button("🚀 Generar Código LaTeX para Overleaf"):
+    # Usamos Raw Strings (r"") para que las llaves no causen SyntaxError
+    latex_final = r"""\documentclass[12pt, letterpaper]{article}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsthm, tcolorbox, geometry}
+\geometry{margin=1in}
+\newtcolorbox{mybox}[2]{colback=#1!5!white,colframe=#1!75!black,fonttitle=\bfseries,title=#2}
+
+\begin{document}
+\begin{flushright} """ + FECHA_ACTUAL + r""" \end{flushright}
+\begin{center}
+    {\Huge \textbf{""" + titulo_tema + r"""}} \\[0.5cm]
+    {\large \textbf{""" + NOMBRE_FIRMA + r"""} \\ \textit{""" + CARGO_FIRMA + r"""}}
+\end{center}
+
+\section{Desarrollo}
+""" + st.session_state.desarrollo_txt + r"""
+
+\section{Ejercicios}
+""" + st.session_state.ejercicios_txt + r"""
+
+\end{document}"""
+
+    st.download_button("⬇️ Descargar archivo .tex", latex_final, f"{titulo_tema}.tex")
+    st.code(latex_final, language='latex')
+    st.success("¡Código generado! Pégalo en Overleaf para un PDF perfecto.")
