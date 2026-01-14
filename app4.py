@@ -1,151 +1,128 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 import io
+import re
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN DE IDENTIDAD (FIJA Y SEGURA) ---
+# --- 1. IDENTIDAD Y CONFIGURACIÓN (BLINDAJE TOTAL) ---
 def obtener_fecha_espanol():
     meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
     ahora = datetime.now()
     return f"{ahora.day} de {meses.get(ahora.strftime('%B'))}, {ahora.year}"
 
-# Variables globales para evitar NameError
-FECHA_ACTUAL = obtener_fecha_espanol()
-FIRMA_NOMBRE = "Ismael Antonio Cardenas López"
-FIRMA_CARGO = "Licenciado en Matemática Unan León Nicaragua"
+FECHA_HOY = obtener_fecha_espanol()
+NOMBRE_DOC = "Ismael Antonio Cardenas López"
+CARGO_DOC = "Licenciado en Matemática Unan León Nicaragua"
 
-st.set_page_config(page_title="Sistema Ismael Cárdenas - UNAN León", layout="wide")
+st.set_page_config(page_title="Sistema Académico Ismael Cárdenas", layout="wide")
 
-# --- 2. MOTOR DE REDACCIÓN ACADÉMICA AUTOMATIZADA ---
-def generar_prosa_profesional(titulo):
+# --- 2. MOTOR DE REDACCIÓN AUTOMÁTICA PROFESIONAL ---
+def generar_prosa(titulo):
     return {
-        "intro": f"El presente compendio técnico, enfocado en '{titulo}', constituye una síntesis rigurosa de los principios analíticos fundamentales. Bajo la autoría del Lic. Ismael Cárdenas López, este documento busca formalizar los conceptos matemáticos mediante un lenguaje axiomático preciso, garantizando la coherencia teórica necesaria para el estudio avanzado en la UNAN León.",
-        "conclu": f"Tras la revisión pormenorizada de los elementos que integran '{titulo}', se concluye que la estructuración lógica de los contenidos permite una transición fluida hacia modelos de mayor complejidad.",
-        "recom": "Se recomienda integrar estos resultados en esquemas de resolución de problemas interdisciplinarios para potenciar el alcance del análisis matemático."
+        "intro": f"El presente compendio técnico sobre '{titulo}' ha sido desarrollado con el objetivo de formalizar los principios analíticos de la materia. Bajo un enfoque axiomático, se presentan las estructuras fundamentales necesarias para el dominio del cálculo avanzado, cumpliendo con los estándares de excelencia de la UNAN León.",
+        "conclu": "Se concluye que la comprensión de estos modelos matemáticos es vital para la resolución de problemas de ingeniería y ciencias exactas. La rigurosidad en la notación asegura una base sólida para estudios posteriores.",
+        "recom": "Se recomienda al estudiante profundizar en la práctica de los teoremas expuestos y utilizar software computacional para validar los modelos de convergencia aquí presentados."
     }
 
-# --- 3. MOTOR DE VISTA PREVIA (CORREGIDO PARA EVITAR DELTAGENERATOR ERROR) ---
-def renderizar_bloques_previa(texto):
-    if not texto:
-        return
+# --- 3. MOTOR DE ESTILIZADO (CUADROS, VIÑETAS Y LATEX) ---
+def renderizar_contenido_elegante(texto):
+    if not texto: return
     lineas = texto.split('\n')
     for linea in lineas:
-        if not linea.strip(): 
-            continue
+        l = linea.strip()
+        if not l: continue
         
-        up = linea.upper()
-        # Detección de palabras clave para cuadros elegantes
+        # Detección de Viñetas (Bullets)
+        if l.startswith(('-', '*', '•')) or re.match(r'^[a-z]\.', l):
+            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;🔹 {l.lstrip('-*•')}")
+            continue
+
+        # Detección de Cuadros Elegantes
+        up = l.upper()
         if any(k in up for k in ["TEOREMA", "PROPOSICIÓN", "LEMA"]):
-            st.info(f"📜 **{linea}**")
+            st.info(f"📜 **{l}**")
         elif any(k in up for k in ["DEFINICIÓN", "CONCEPTO"]):
-            st.success(f"📘 **{linea}**")
+            st.success(f"📘 **{l}**")
         elif any(k in up for k in ["EJERCICIO", "EJEMPLO"]):
-            st.warning(f"✏️ **{linea}**")
+            st.warning(f"✏️ **{l}**")
         elif "SOLUCIÓN" in up:
-            st.write(f"✅ **{linea}**")
+            st.write(f"✅ **{l}**")
         else:
-            # Si contiene símbolos matemáticos, intentamos renderizar con st.latex
-            if "$" in linea:
-                # Limpiamos los $ para que st.latex no falle
-                limpia = linea.replace("$", "")
-                st.latex(limpia)
+            # Renderizado inteligente de LaTeX
+            if "$" in l:
+                partes = l.split('$')
+                for i, p in enumerate(partes):
+                    if i % 2 != 0: st.latex(p)
+                    else: st.write(p)
             else:
-                st.markdown(linea)
+                st.write(l)
 
-# --- 4. GESTIÓN DE IMAGEN CIRCULAR ---
-def preparar_foto():
-    try:
-        img = Image.open("foto.png").convert("RGBA")
-    except:
-        img = Image.new('RGBA', (400, 400), (255, 255, 255, 0))
-        draw = ImageDraw.Draw(img)
-        draw.ellipse((0, 0, 400, 400), fill=(26, 82, 118))
-    
-    mask = Image.new('L', (400, 400), 0)
-    draw_mask = ImageDraw.Draw(mask)
-    draw_mask.ellipse((0, 0, 400, 400), fill=255)
-    
-    output = ImageOps.fit(img, (400, 400), centering=(0.5, 0.5))
-    output.putalpha(mask)
-    
-    buf = io.BytesIO()
-    output.save(buf, format='PNG')
-    buf.seek(0)
-    return buf
+# --- 4. INTERFAZ DE USUARIO ---
+st.title("🎓 Compilador de Ingeniería Matemática - Ismael Cárdenas")
 
-# --- 5. INTERFAZ ---
-st.title("🎓 Compilador LaTeX de Élite - Lic. Ismael Cárdenas")
-
-if 'contenido' not in st.session_state: st.session_state.contenido = ""
+if 'desarrollo' not in st.session_state: st.session_state.desarrollo = ""
 if 'ejercicios' not in st.session_state: st.session_state.ejercicios = ""
 
-col_in, col_pre = st.columns([1, 1.2])
+col_input, col_preview = st.columns([1, 1.2])
 
-with col_in:
-    st.subheader("📥 Panel de Insumos")
-    titulo_proy = st.text_input("Título del Proyecto", "Sucesiones y Series parte 1")
-    st.session_state.contenido = st.text_area("Desarrollo Matemático (LaTeX):", value=st.session_state.contenido, height=350)
-    st.session_state.ejercicios = st.text_area("Sección de Ejercicios:", value=st.session_state.ejercicios, height=150)
+with col_input:
+    st.subheader("📥 Panel de Control")
+    titulo = st.text_input("Título del Tema:", "Sucesiones y Series parte 1")
+    st.session_state.desarrollo = st.text_area("Contenido Teórico (LaTeX):", value=st.session_state.desarrollo, height=350)
+    st.session_state.ejercicios = st.text_area("Práctica y Problemas:", value=st.session_state.ejercicios, height=150)
 
-with col_pre:
+with col_preview:
     st.subheader("👁️ Vista Previa Académica")
-    textos_pro = generar_prosa_profesional(titulo_proy)
+    textos = generar_prosa(titulo)
     with st.container(border=True):
-        # Encabezado manual para la vista previa
-        st.markdown(f"<div style='text-align:right;'>{FECHA_ACTUAL}</div>", unsafe_allow_html=True)
-        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{titulo_proy}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align:center;'><b>{FIRMA_NOMBRE}</b><br><i>{FIRMA_CARGO}</i></p>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:right;'>{FECHA_HOY}</div>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{titulo}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center;'><b>{NOMBRE_DOC}</b><br><i>{CARGO_DOC}</i></p>", unsafe_allow_html=True)
         st.markdown("---")
         
-        st.markdown(f"### I. Introducción\n{textos_pro['intro']}")
-        st.markdown("### II. Desarrollo")
-        renderizar_bloques_previa(st.session_state.contenido)
+        st.markdown(f"### I. Introducción\n{textos['intro']}")
+        st.markdown("### II. Marco Teórico")
+        renderizar_contenido_elegante(st.session_state.desarrollo)
         st.markdown("### III. Ejercicios")
-        renderizar_bloques_previa(st.session_state.ejercicios)
-        st.markdown(f"### IV. Conclusiones\n{textos_pro['conclu']}")
+        renderizar_contenido_elegante(st.session_state.ejercicios)
+        st.markdown(f"### IV. Conclusiones\n{textos['conclu']}")
 
-# --- 6. GENERACIÓN DE CÓDIGO LATEX PROFESIONAL ---
-if st.button("🚀 Generar Código LaTeX para Overleaf"):
-    textos_pro = generar_prosa_profesional(titulo_proy)
-    
-    codigo_latex = f"""% Compilador Académico Ismael Cardenas - UNAN LEON
+# --- 5. BOTÓN DE EXPORTACIÓN (CÓDIGO CON TODOS LOS FIERROS) ---
+if st.button("🚀 Generar Código LaTeX de Élite"):
+    textos = generar_prosa(titulo)
+    codigo_latex = f"""
 \\documentclass[12pt, letterpaper]{{article}}
 \\usepackage[spanish]{{babel}}
 \\usepackage[utf8]{{inputenc}}
-\\usepackage{{amsmath, amssymb, amsthm, amsfonts}}
-\\usepackage{{tcolorbox}} % Cuadros de colores para teoremas
-\\usepackage{{pgfplots}} % Gráficas matemáticas profesionales
-\\usepackage{{geometry}}
+\\usepackage{{amsmath, amssymb, amsthm, amsfonts, tcolorbox, pgfplots, geometry}}
 \\geometry{{margin=1in}}
 \\pgfplotsset{{compat=1.18}}
 
-% Estilos de cuadros elegantes
+% Cuadros estilo libro de texto
 \\newtcolorbox{{mybox}}[2]{{colback=#1!5!white,colframe=#1!75!black,fonttitle=\\bfseries,title=#2}}
 
-\\title{{\\Huge \\textbf{{{titulo_proy}}}}}
-\\author{{\\textbf{{{FIRMA_NOMBRE}}} \\\\ \\small {FIRMA_CARGO}}}
-\\date{{{FECHA_ACTUAL}}}
-
 \\begin{{document}}
-\\maketitle
+\\begin{{flushright}} {FECHA_HOY} \\end{{flushright}}
+\\begin{{center}}
+    {{\\Huge \\textbf{{{titulo}}}}} \\\\[0.5cm]
+    {{\\large \\textbf{{{NOMBRE_DOC}}}} \\\\ \\textit{{{CARGO_DOC}}}}}
+\\end{{center}}
+\\hr
 
 \\section{{Introducción}}
-{textos_pro['intro']}
+{textos['intro']}
 
-\\section{{Desarrollo Teórico}}
-{st.session_state.contenido}
+\\section{{Desarrollo}}
+{st.session_state.desarrollo}
 
-\\section{{Ejercicios y Aplicaciones}}
+\\section{{Ejercicios}}
 {st.session_state.ejercicios}
 
 \\section{{Conclusiones}}
-{textos_pro['conclu']}
-
-\\section{{Recomendaciones}}
-{textos_pro['recom']}
+{textos['conclu']}
 
 \\end{{document}}
 """
-    st.download_button("⬇️ Descargar Archivo .tex", codigo_latex, f"{titulo_proy}.tex")
+    st.download_button("⬇️ Descargar archivo .tex", codigo_latex, f"{titulo}.tex")
     st.code(codigo_latex, language='latex')
-    st.success("¡Código generado con éxito! Todo listo para Overleaf.")
+    st.success("¡Documento compilado para Overleaf!")
