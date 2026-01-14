@@ -1,4 +1,5 @@
-import streamlit as st
+im
+port streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 from docx import Document
 from docx.shared import Inches
@@ -148,5 +149,72 @@ if st.button("🚀 Compilar Documentación de Élite"):
     st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx")
 
     # LATEX
-    latex_code = f"\\documentclass[12pt]{{article}}\\usepackage[spanish]{{babel}}\\usepackage{{amsmath,amssymb,tcolorbox}}\\title{{{titulo_proy}}}\\author{{{firma_line1} \\\\ {firma_line2}}}\\begin{{document}}\\maketitle\\section{{Introducción}}{textos_auto['intro']}\\section{{Contenido}}{st.session_state.contenido}\\section{{Ejercicios}}{st.session_state.ejercicios}\\section{{Conclusiones}}{textos_auto['conclu']}\\section{{Recomendaciones}}{textos_auto['recom']}\\end{{document}}"
-    st.download_button("⬇️ Descargar Código LaTeX", latex_code, f"{titulo_proy}.tex")
+   # --- GENERACIÓN DE CÓDIGO LATEX PROFESIONAL ---
+    latex_code = f"""\\documentclass[12pt, letterpaper]{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage[spanish]{{babel}}
+\\usepackage{{amsmath, amssymb, amstfonts}}
+\\usepackage[most]{{tcolorbox}}
+\\usepackage{{geometry}}
+\\usepackage{{graphicx}}
+
+\\geometry{{margin=1in}}
+
+% --- DEFINICIÓN DE ESTILOS (COLORES) ---
+\\newtcolorbox{{teorema_box}}{{
+    colback=blue!5!white, colframe=blue!75!black, fonttitle=\\bfseries,
+    title=✨ Teorema / Proposición, arc=4pt, outer arc=4pt
+}}
+
+\\newtcolorbox{{definicion_box}}{{
+    colback=green!5!white, colframe=green!50!black, fonttitle=\\bfseries,
+    title=📘 Definición / Concepto, arc=4pt, outer arc=4pt
+}}
+
+\\newtcolorbox{{ejercicio_box}}{{
+    colback=orange!5!white, colframe=orange!75!black, fonttitle=\\bfseries,
+    title=📝 Ejercicio / Ejemplo, arc=4pt, outer arc=4pt
+}}
+
+\\newtcolorbox{{solucion_box}}{{
+    colback=gray!5!white, colframe=gray!50!black, fonttitle=\\bfseries,
+    title=✅ Solución, arc=4pt, outer arc=4pt
+}}
+
+% --- TÍTULO Y AUTOR ---
+\\title{{\\textbf{{{titulo_proy}}}}}
+\\author{{
+    \\textbf{{{firma_line1}}} \\\\ 
+    \\textit{{{firma_line2}}} \\\\
+    \\small Fecha: {fecha_actual}
+}}
+\\date{{}}
+
+\\begin{{document}}
+
+\\maketitle
+
+\\section{{Introducción}}
+{textos_auto['intro']}
+
+\\section{{Desarrollo Teórico}}
+% Aquí el sistema coloca el contenido procesando los bloques
+{st.session_state.contenido.replace('TEOREMA', '\\begin{teorema_box} TEOREMA').replace('DEFINICIÓN', '\\begin{definicion_box} DEFINICIÓN').replace('EJERCICIO', '\\begin{ejercicio_box} EJERCICIO')}
+% Nota: Se cierran los bloques manualmente o mediante etiquetas en el contenido
+
+\\section{{Ejercicios y Soluciones}}
+{st.session_state.ejercicios}
+
+\\section{{Conclusiones}}
+\\begin{{tcolorbox}}[colback=green!10!white, colframe=green!50!black]
+{textos_auto['conclu']}
+\\end{{tcolorbox}}
+
+\\section{{Recomendaciones}}
+\\begin{{tcolorbox}}[colback=blue!10!white, colframe=blue!50!black]
+{textos_auto['recom']}
+\\end{{tcolorbox}}
+
+\\end{{document}}
+"""
+    st.download_button("⬇️ Descargar Código LaTeX para Overleaf", latex_code, f"{titulo_proy}.tex")
