@@ -2,28 +2,28 @@ import streamlit as st
 import re
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN Y FIRMA ---
-def obtener_fecha():
+# --- 1. IDENTIDAD Y FECHA ---
+def obtener_fecha_espanol():
     meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
     ahora = datetime.now()
     return f"{ahora.day} de {meses.get(ahora.strftime('%B'))}, {ahora.year}"
 
-FECHA_DOC = obtener_fecha()
-# Firma solicitada por el Licenciado
-FIRMA_ID = "Ismael Antonio Cardenas López Licenciado en Matemática Unan León Nicaragua"
+FECHA_HOY = obtener_fecha_espanol()
+# Texto de identidad solicitado
+IDENTIDAD = "Ismael Antonio Cardenas López Licenciado en Matemática Unan León Nicaragua"
 
-st.set_page_config(page_title="Sistema Académico Cárdenas", layout="wide")
+st.set_page_config(page_title="Asistente Matemático - Ismael Cárdenas", layout="wide")
 
-# --- 2. MOTOR DE PROSA ACADÉMICA ---
-def generar_prosa(titulo):
+# --- 2. MOTOR DE REDACCIÓN ACADÉMICA ---
+def generar_prosa_automatica(titulo):
     return {
-        "intro": f"El presente compendio técnico enfocado en '{titulo}' constituye una síntesis rigurosa de los principios analíticos fundamentales. Bajo la autoría del Lic. Ismael Cárdenas López, este documento formaliza los conceptos matemáticos mediante un lenguaje axiomático preciso para la UNAN León.",
-        "conclu": f"Tras la revisión de los elementos que integran '{titulo}', se concluye que la estructuración lógica de los contenidos permite una transición fluida hacia modelos de mayor complejidad analítica.",
-        "recom": "Se recomienda integrar estos resultados en esquemas de resolución interdisciplinarios para potenciar el alcance del análisis matemático."
+        "intro": f"El presente compendio técnico enfocado en '{titulo}' constituye una síntesis rigurosa de los principios analíticos fundamentales. Bajo la autoría del Lic. Ismael Cárdenas López, este documento busca formalizar los conceptos matemáticos mediante un lenguaje axiomático preciso para la UNAN León Nicaragua.",
+        "conclu": f"Tras la revisión pormenorizada de los elementos que integran '{titulo}', se concluye que la estructuración lógica de los contenidos permite una transición fluida hacia modelos de mayor complejidad analítica y aplicabilidad técnica.",
+        "recom": "Se recomienda integrar estos resultados en esquemas de resolución interdisciplinarios para potenciar el alcance del análisis matemático en el contexto de las ciencias exactas."
     }
 
-# --- 3. MOTOR DE ESTILIZADO ROBUSTO (SIN DELTAGENERATOR ERROR) ---
-def renderizar_bloques_pro(texto):
+# --- 3. MOTOR DE ESTILIZADO (VIÑETAS Y CUADROS) ---
+def renderizar_bloques_academicos(texto):
     if not texto: return
     lineas = texto.split('\n')
     for linea in lineas:
@@ -47,72 +47,66 @@ def renderizar_bloques_pro(texto):
             if "$" in l: st.latex(l.replace("$", ""))
             else: st.write(l)
 
-# --- 4. INTERFAZ PRINCIPAL ---
-st.title("🎓 Compilador de Ingeniería Matemática - Lic. Ismael Cárdenas")
+# --- 4. INTERFAZ DE USUARIO ---
+st.title("🎓 Sistema de Compilación Académica - Lic. Ismael Cárdenas")
 
 if 'desarrollo' not in st.session_state: st.session_state.desarrollo = ""
 if 'ejercicios' not in st.session_state: st.session_state.ejercicios = ""
 
-col_in, col_pre = st.columns([1, 1.2])
+col_input, col_preview = st.columns([1, 1.2])
 
-with col_in:
+with col_input:
     st.subheader("📥 Panel de Insumos")
-    tema = st.text_input("Título del Proyecto:", "Sucesiones y Series parte 1")
-    st.session_state.desarrollo = st.text_area("Contenido Teórico (LaTeX):", value=st.session_state.desarrollo, height=300)
-    st.session_state.ejercicios = st.text_area("Sección de Práctica:", value=st.session_state.ejercicios, height=150)
+    titulo_doc = st.text_input("Título del Tema:", "Sucesiones y Series parte 1")
+    st.session_state.desarrollo = st.text_area("Cuerpo Teórico (LaTeX):", value=st.session_state.desarrollo, height=300)
+    st.session_state.ejercicios = st.text_area("Práctica Propuesta:", value=st.session_state.ejercicios, height=150)
 
-with col_pre:
-    prosa = generar_prosa(tema)
-    st.subheader("👁️ Vista Previa Institucional")
+with col_preview:
+    textos_ia = generar_prosa_automatica(titulo_doc)
+    st.subheader("👁️ Vista Previa")
     with st.container(border=True):
-        # Cabecera con Firma y Fecha
-        st.markdown(f"<div style='text-align:right; font-size:12px;'>{FECHA_DOC}</div>", unsafe_allow_html=True)
-        st.markdown(f"<p style='font-size:14px; color:#1A5276;'><b>{FIRMA_ID}</b></p>", unsafe_allow_html=True)
-        st.markdown(f"<h1 style='text-align:center;'>{tema}</h1>", unsafe_allow_html=True)
+        # Cabecera Tipográfica (Sin imágenes para evitar errores)
+        st.markdown(f"<div style='text-align:right; font-size:12px;'>León, Nicaragua. {FECHA_HOY}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='border-left: 5px solid #1A5276; padding-left: 15px;'><b>{IDENTIDAD}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{titulo_doc}</h1>", unsafe_allow_html=True)
         st.markdown("---")
         
-        # Secciones Automatizadas
-        st.markdown(f"**I. INTRODUCCIÓN**\n\n{prosa['intro']}")
-        st.markdown("---")
-        renderizar_bloques_pro(st.session_state.desarrollo)
-        renderizar_bloques_pro(st.session_state.ejercicios)
-        st.markdown("---")
-        st.markdown(f"**IV. CONCLUSIONES**\n\n{prosa['conclu']}")
+        st.markdown(f"### I. Introducción\n{textos_ia['intro']}")
+        renderizar_bloques_academicos(st.session_state.desarrollo)
+        renderizar_bloques_academicos(st.session_state.ejercicios)
+        st.markdown(f"### IV. Conclusiones\n{textos_ia['conclu']}")
 
-# --- 5. GENERACIÓN DE CÓDIGO LATEX (BLINDADO CONTRA SYNTAXERROR) ---
-if st.button("🚀 Generar Código LaTeX de Alta Gama"):
-    prosa = generar_prosa(tema)
+# --- 5. EXPORTACIÓN A LATEX ---
+if st.button("🚀 Generar Código LaTeX Profesional"):
+    textos_ia = generar_prosa_automatica(titulo_doc)
     
-    # Construcción por partes para evitar el error de llaves de f-strings
-    parte1 = r"""\documentclass[12pt, letterpaper]{article}
+    # Construcción de string pura para evitar conflicto de llaves {}
+    latex_final = r"""\documentclass[12pt, letterpaper]{article}
 \usepackage[spanish]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amssymb, amsthm, tcolorbox, geometry}
 \geometry{margin=1in}
-\newtcolorbox{mybox}[2]{colback=#1!5!white,colframe=#1!75!black,fonttitle=\bfseries,title=#2}
+
 \begin{document}
-\begin{flushright} """ + FECHA_DOC + r""" \end{flushright}
+\begin{flushright} """ + FECHA_HOY + r""" \end{flushright}
 \begin{center}
-    {\Huge \textbf{""" + tema + r"""}} \\[0.5cm]
-    {\large \textbf{""" + FIRMA_ID + r"""}}
+    {\Huge \textbf{""" + titulo_doc + r"""}} \\[0.5cm]
+    {\large \textbf{""" + IDENTIDAD + r"""}}
 \end{center}
 
 \section{Introducción}
-""" + prosa['intro'] + r"""
+""" + textos_ia['intro'] + r"""
 
-\section{Marco Teórico}
+\section{Desarrollo}
 """ + st.session_state.desarrollo + r"""
 
 \section{Ejercicios}
 """ + st.session_state.ejercicios + r"""
 
-\section{Conclusiones y Recomendaciones}
-""" + prosa['conclu'] + r"""
-\vspace{0.5cm}
-""" + prosa['recom'] + r"""
+\section{Conclusiones}
+""" + textos_ia['conclu'] + r"""
 
 \end{document}"""
 
-    st.download_button("⬇️ Descargar archivo .tex", parte1, f"{tema}.tex")
-    st.code(parte1, language='latex')
-    st.success("¡Código para Overleaf generado! No olvides darle a 'Recompile' en Overleaf para ver los cuadros.")
+    st.download_button("⬇️ Descargar archivo .tex", latex_final, f"{titulo_doc}.tex")
+    st.code(latex_final, language='latex')
