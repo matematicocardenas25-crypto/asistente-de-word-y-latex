@@ -149,7 +149,7 @@ if st.button("🚀 Compilar Documentación de Élite"):
     st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx")
 
     # LATEX
-   # --- GENERACIÓN DE CÓDIGO LATEX PROFESIONAL ---
+  # --- GENERACIÓN DE CÓDIGO LATEX PROFESIONAL ---
     latex_code = f"""\\documentclass[12pt, letterpaper]{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage[spanish]{{babel}}
