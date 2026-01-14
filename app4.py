@@ -2,76 +2,101 @@ import streamlit as st
 import re
 from datetime import datetime
 
-# --- IDENTIDAD (Solicitada 2026-01-12) ---
-FECHA_HOY = datetime.now().strftime("%d de Enero, %2026")
+# --- 1. IDENTIDAD Y FECHA (2026-01-12) ---
+def obtener_fecha_nicaragua():
+    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    f = datetime.now()
+    return f"{f.day} de {meses[f.month-1]}, {f.year}"
+
+FECHA_HOY = obtener_fecha_nicaragua()
 IDENTIDAD = "Ismael Antonio Cardenas López Licenciado en Matemática Unan León Nicaragua"
 
-st.set_page_config(page_title="Compilador Ismael", layout="wide")
+st.set_page_config(page_title="Sistema Académico - Ismael Cárdenas", layout="wide")
 
-# --- MOTOR DE TEXTO MIXTO (LA SOLUCIÓN DEFINITIVA) ---
-def renderizar_texto_mixto(texto):
+# --- 2. MOTOR DE PROSA (No quita nada) ---
+def generar_prosa(titulo):
+    return {
+        "intro": "El presente compendio técnico enfocado en '" + titulo + "' constituye una síntesis rigurosa de los principios analíticos fundamentales. Bajo la autoría del Lic. Ismael Cárdenas López, este documento busca formalizar los conceptos matemáticos mediante un lenguaje axiomático preciso para la UNAN León Nicaragua.",
+        "conclu": "Tras la revisión de los elementos que integran '" + titulo + "', se concluye que la estructuración lógica permite una resolución eficaz de problemas complejos."
+    }
+
+# --- 3. PROCESADOR DE TEXTO MIXTO (SOLUCIONA EL TEXTO PEGADO) ---
+def renderizar_bloques(texto):
     if not texto: return
-    # Dividimos por líneas para mantener tu estructura de Word
     lineas = texto.split('\n')
-    
     for linea in lineas:
         l = linea.strip()
         if not l:
-            st.write("") # Mantiene el aire entre párrafos
+            st.write("")
             continue
         
-        # 1. Detección de Títulos Académicos
-        if any(k in l.upper() for k in ["TEOREMA", "DEFINICIÓN", "EJEMPLO"]):
-            st.markdown(f"### {l}")
-            continue
-
-        # 2. PROCESADO DE TEXTO MIXTO (Fórmulas entre palabras)
-        # Buscamos todo lo que esté entre $ o $$
-        partes = re.split(r'(\$\$.*?\$\$|\$.*?\$)', l)
+        # Formato para Teoremas, Ejemplos y Definiciones
+        up = l.upper()
+        if "TEOREMA" in up: st.info("📜 **" + l + "**")
+        elif "EJEMPLO" in up or "EJERCICIO" in up: st.warning("✏️ **" + l + "**")
+        elif "DEFINICIÓN" in up: st.success("📘 **" + l + "**")
         
-        # Creamos una línea de texto que combine ambos
-        html_linea = ""
-        for p in partes:
-            if p.startswith('$'): # Es matemática
-                # La envolvemos en un contenedor que no deje que se pegue
-                formula = p.replace('$', '')
-                st.latex(formula)
-            else: # Es texto plano
-                if p.strip():
+        # Procesado de fórmulas mixtas
+        elif "$" in l:
+            partes = re.split(r'(\$\$.*?\$\$|\$.*?\$)', l)
+            for p in partes:
+                if not p: continue
+                if p.startswith('$'):
+                    st.latex(p.replace('$', ''))
+                else:
                     st.write(p.strip())
+        else:
+            st.write(l)
 
-# --- INTERFAZ ORIGINAL ---
-st.title("🎓 Sistema de Texto Mixto - Lic. Ismael Cárdenas")
+# --- 4. INTERFAZ ORIGINAL (DOS COLUMNAS) ---
+st.title("🎓 Sistema de Compilación - Lic. Ismael Cárdenas")
 
-col1, col2 = st.columns([1, 1.2])
+# Recuperamos los dos cuadros de entrada
+col_in, col_pre = st.columns([1, 1.2])
 
-with col1:
-    st.subheader("📥 Pegue su texto de Word")
-    titulo = st.text_input("Tema:", "Sucesiones")
-    cuerpo_doc = st.text_area("Contenido completo:", height=500)
+with col_in:
+    st.subheader("📥 Panel de Insumos")
+    tema = st.text_input("Título del Tema:", "Sucesiones y Series")
+    
+    # Los dos archivos/bloques que pediste
+    desarrollo = st.text_area("Cuerpo del Desarrollo (Word/LaTeX):", height=300, placeholder="Definiciones, teoremas...")
+    ejercicios = st.text_area("Sección de Práctica y Ejercicios:", height=200, placeholder="Enuncie aquí los ejercicios...")
 
-with col2:
-    st.subheader("👁️ Vista Previa Real")
+with col_pre:
+    textos_ia = generar_prosa(tema)
+    st.subheader("👁️ Vista Previa del Documento")
     with st.container(border=True):
-        # Cabecera Institucional
-        st.markdown(f"<div style='text-align:right;'>{FECHA_HOY}</div>", unsafe_allow_html=True)
-        st.markdown(f"**{IDENTIDAD}**")
-        st.markdown(f"<h1 style='text-align:center;'>{titulo}</h1>", unsafe_allow_html=True)
+        # Cabecera solicitada
+        st.markdown("<div style='text-align:right; font-size:12px; color:gray;'>" + FECHA_HOY + "</div>", unsafe_allow_html=True)
+        st.markdown("<div style='border-left: 5px solid #1A5276; padding-left: 15px;'><b>" + IDENTIDAD + "</b></div>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align:center; color:#1A5276;'>" + tema + "</h1>", unsafe_allow_html=True)
         st.markdown("---")
         
-        # Introducción Automática (Sin errores de SyntaxError)
-        intro_texto = "El presente compendio técnico sobre '" + titulo + "' constituye una síntesis rigurosa para la UNAN León."
-        st.write(intro_texto)
+        st.markdown("### I. INTRODUCCIÓN")
+        st.write(textos_ia["intro"])
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        # LLAMADA AL NUEVO MOTOR (Aquí ocurre la magia)
-        renderizar_texto_mixto(cuerpo_doc)
+        # Mostramos ambos bloques en la vista previa
+        renderizar_bloques(desarrollo)
+        st.markdown("<br>", unsafe_allow_html=True)
+        renderizar_bloques(ejercicios)
+        
+        st.markdown("---")
+        st.markdown("### IV. CONCLUSIONES")
+        st.write(textos_ia["conclu"])
 
-# --- GENERADOR DE LATEX SEGURO (CONCATENACIÓN PURA) ---
-if st.button("🚀 Generar Código .tex"):
-    # Evitamos f-strings para que las llaves {} no den SyntaxError de nuevo
-    cod_tex = r"\documentclass{article}" + "\n" + r"\usepackage[utf8]{inputenc}" + "\n"
-    cod_tex += r"\begin{document}" + "\n" + r"\title{" + titulo + "}\n"
-    cod_tex += r"\author{" + IDENTIDAD + "}\n" + r"\maketitle" + "\n"
-    cod_tex += cuerpo_doc + "\n" + r"\end{document}"
+# --- 5. GENERADOR DE LATEX (SIN ERRORES DE LLAVES) ---
+if st.button("🚀 Generar Código LaTeX"):
+    # Usamos concatenación (+) para que las llaves de LaTeX no choquen con Python
+    c_tex = r"\documentclass[12pt]{article}" + "\n" + r"\usepackage[spanish]{babel}" + "\n"
+    c_tex += r"\usepackage{amsmath, amssymb, geometry}" + "\n" + r"\geometry{margin=1in}" + "\n"
+    c_tex += r"\begin{document}" + "\n"
+    c_tex += r"\title{" + tema + "}\n" + r"\author{" + IDENTIDAD + "}\n" + r"\date{" + FECHA_HOY + "}\n" + r"\maketitle" + "\n"
     
-    st.code(cod_tex, language="latex")
+    c_tex += r"\section{Desarrollo Teórico}" + "\n" + desarrollo + "\n"
+    c_tex += r"\section{Práctica}" + "\n" + ejercicios + "\n"
+    
+    c_tex += r"\end{document}"
+    
+    st.code(c_tex, language="latex")
+    st.success("¡Código listo! Copia esto en Overleaf.")
