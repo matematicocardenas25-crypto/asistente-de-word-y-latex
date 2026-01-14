@@ -15,85 +15,102 @@ def obtener_fecha():
     return f"{ahora.day} de {meses.get(ahora.strftime('%B'))}, {ahora.year}"
 
 fecha_actual = obtener_fecha()
-firma_full = "Ismael Antonio Cardenas López - Licenciado en Matemática Unan León Nicaragua"
+firma_full = "Ismael Antonio Cardenas López"
+sub_firma = "Licenciado en Matemática Unan León Nicaragua"
 
-# --- 2. MOTOR DE CONTENIDO ROBUSTO ---
+# --- 2. MOTOR DE TEXTOS ROBUSTOS ---
 def generar_textos_robustos(titulo):
     return {
-        "intro": f"El presente compendio técnico constituye una sistematización rigurosa de los fundamentos analíticos de '{titulo}'...",
+        "intro": f"El presente compendio técnico constituye una sistematización rigurosa de los fundamentos analíticos de '{titulo}'. Bajo la autoría del Lic. Ismael Cárdenas López, este documento articula la abstracción simbólica con la verificación fenomenológica...",
         "conclu": f"Tras el análisis exhaustivo de '{titulo}', se concluye que la convergencia entre el rigor analítico y la modelización permite una comprensión holística...",
         "recom": "Se recomienda encarecidamente someter los resultados analíticos a un proceso de contraste crítico frente a modelos de simulación numérica..."
     }
 
-# --- 3. LÓGICA DE COLORES PARA VISTA PREVIA ---
-def renderizar_estilos(texto):
+# --- 3. PROCESADOR DE BLOQUES (DETECCIÓN DE PALABRAS CLAVE) ---
+def procesar_a_latex(texto):
     lineas = texto.split('\n')
+    resultado = []
     for l in lineas:
         if not l.strip(): continue
         up = l.upper()
         if any(k in up for k in ["TEOREMA", "AXIOMA", "PROPOSICIÓN"]):
-            st.info(f"✨ **{l}**") # Azul llamativo
+            resultado.append(f"\\begin{{teorema_box}} {l} \\end{{teorema_box}}")
         elif any(k in up for k in ["DEFINICIÓN", "CONCEPTO"]):
-            st.success(f"📘 **{l}**") # Verde llamativo
+            resultado.append(f"\\begin{{definicion_box}} {l} \\end{{definicion_box}}")
         elif any(k in up for k in ["EJERCICIO", "EJEMPLO"]):
-            st.warning(f"📝 **{l}**") # Naranja llamativo
+            resultado.append(f"\\begin{{ejercicio_box}} {l} \\end{{ejercicio_box}}")
         elif "SOLUCIÓN" in up or "SOLUCION" in up:
-            st.markdown(f"✅ **{l}**") # Gris/Check
+            resultado.append(f"\\begin{{solucion_box}} {l} \\end{{solucion_box}}")
         else:
-            st.write(l)
+            resultado.append(l)
+    return "\n".join(resultado)
 
-# --- 4. INTERFAZ DE USUARIO ---
-st.title("🎓 Gestor Académico de Élite - Ismael Cárdenas")
+# --- 4. INTERFAZ ---
+st.title("🎓 Sistema Académico Ismael Cárdenas - UNAN León")
 
-with st.sidebar:
-    st.header("⚙️ Configuración")
-    tema = st.text_input("Tema de la clase", "Sucesiones y Series parte 1")
-    st.write(f"📅 **Fecha:** {fecha_actual}")
-    st.write(f"👤 **Autor:** {firma_full}")
+tema = st.text_input("Tema de la clase", "Sucesiones y Series parte 1")
+col_in, col_pre = st.columns([1, 1])
 
-col_input, col_preview = st.columns([1, 1])
+with col_in:
+    cuerpo = st.text_area("Desarrollo Teórico (Teoremas, etc.)", height=200)
+    ejercicios = st.text_area("Ejercicios y Soluciones", height=150)
 
-with col_input:
-    st.subheader("📥 Entrada de Datos")
-    cont_teorico = st.text_area("Contenido (Teoremas, Definiciones...)", height=250)
-    cont_ejercicios = st.text_area("Ejercicios y Soluciones", height=200)
+# --- 5. GENERACIÓN DE ARCHIVOS (MEMORIA INTERNA) ---
+textos = generar_textos_robustos(tema)
 
-# --- 5. VISTA PREVIA Y DESCARGAS ---
-with col_preview:
-    st.subheader("👁️ Vista Previa del Documento")
-    textos = generar_textos_robustos(tema)
-    
+# Lógica para Word
+doc = Document()
+doc.add_paragraph(fecha_actual).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+doc.add_heading(tema, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
+doc.add_paragraph(f"{firma_full}\n{sub_firma}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+doc.add_heading("I. Introducción", 1)
+doc.add_paragraph(textos['intro'])
+doc.add_heading("II. Desarrollo", 1)
+doc.add_paragraph(cuerpo)
+doc.add_heading("IV. Conclusiones", 1)
+doc.add_paragraph(textos['conclu'])
+
+w_io = io.BytesIO()
+doc.save(w_io)
+w_io.seek(0)
+
+# Lógica para LaTeX
+cuerpo_tex = procesar_a_latex(cuerpo)
+ejercicios_tex = procesar_a_latex(ejercicios)
+latex_code = f"""\\documentclass[12pt, letterpaper]{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage[spanish]{{babel}}
+\\usepackage{{amsmath, amssymb, amsfonts}} 
+\\usepackage[most]{{tcolorbox}}
+\\geometry{{margin=1in}}
+
+\\newtcolorbox{{teorema_box}}{{colback=blue!5, colframe=blue!75!black, arc=4pt, fontupper=\\bfseries}}
+\\newtcolorbox{{definicion_box}}{{colback=green!5, colframe=green!50!black, arc=4pt}}
+\\newtcolorbox{{ejercicio_box}}{{colback=orange!5, colframe=orange!75!black, arc=4pt}}
+\\newtcolorbox{{solucion_box}}{{colback=gray!10, colframe=black, arc=4pt}}
+
+\\title{{\\textbf{{{tema}}}}}
+\\author{{{firma_full} \\\\ \\small {sub_firma}}}
+\\date{{{fecha_actual}}}
+
+\\begin{{document}}
+\\maketitle
+\\section{{Introducción}} {textos['intro']}
+\\section{{Contenido}} {cuerpo_tex}
+\\section{{Ejercicios}} {ejercicios_tex}
+\\section{{Conclusiones}} {textos['conclu']}
+\\section{{Recomendaciones}} {textos['recom']}
+\\end{{document}}"""
+
+# --- 6. MENÚ DE DESCARGA CON VISTA PREVIA ---
+with col_pre:
+    st.subheader("👁️ Vista Previa")
     with st.container(border=True):
-        # Encabezado con imagen circular (Simulada en preview)
-        st.markdown(f"<div style='text-align:right;'>{fecha_actual}</div>", unsafe_allow_html=True)
-        st.markdown(f"<h2 style='text-align:center;'>{tema}</h2>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align:center;'>{firma_full}</p>", unsafe_allow_html=True)
-        st.divider()
-        
-        st.markdown("### I. Introducción")
+        st.markdown(f"**{tema}**")
+        st.caption(f"{firma_full} - {fecha_actual}")
         st.write(textos['intro'])
-        
-        st.markdown("### II. Desarrollo Teórico")
-        renderizar_estilos(cont_teorico)
-        
-        st.markdown("### III. Ejercicios")
-        renderizar_estilos(cont_ejercicios)
-        
-        st.success(f"**IV. Conclusiones Robustas**\n\n{textos['conclu']}")
-        st.info(f"**V. Recomendaciones Robustas**\n\n{textos['recom']}")
-
-# --- 6. MENÚS DE DESCARGA SEPARADOS ---
-st.divider()
-c1, c2 = st.columns(2)
-
-with c1:
-    if st.button("📦 Generar Menú WORD", key="gen_word"):
-        # Lógica de Word aquí (Se mantiene tu código previo)
-        st.download_button("⬇️ Descargar .DOCX", b"data", f"{tema}.docx", key="dw_word")
-
-with c2:
-    if st.button("📦 Generar Menú LaTeX", key="gen_latex"):
-        # Generamos el código limpio para Overleaf
-        # ... (Función procesar_a_latex aquí) ...
-        st.code("% Copia este código en Overleaf\n\\documentclass{article}...", language="latex")
-        st.download_button("⬇️ Descargar .TEX", "codigo", f"{tema}.tex", key="dw_latex")
+        # (Aquí podrías poner la función renderizar_estilos para ver colores)
+    
+    st.divider()
+    st.download_button("⬇️ Descargar Word (.docx)", w_io, f"{tema}.docx", key="word_final")
+    st.download_button("⬇️ Descargar LaTeX (.tex)", latex_code, f"{tema}.tex", key="latex_final")
