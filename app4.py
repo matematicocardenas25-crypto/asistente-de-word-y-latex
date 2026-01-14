@@ -148,72 +148,58 @@ if st.button("🚀 Compilar Documentación de Élite"):
     st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx")
 
     # LATEX
-  # --- GENERACIÓN DE CÓDIGO LATEX PROFESIONAL ---
-    latex_code = f"""\\documentclass[12pt, letterpaper]{{article}}
+# --- 7. DESCARGAS (VERSION CORREGIDA SIN ERRORES DE PAQUETES) ---
+if st.button("🚀 Compilar Documentación de Élite"):
+    textos_auto = generar_textos_academicos(titulo_proy)
+    
+    # Procesamiento de bloques
+    cuerpo_tex = procesar_a_latex(st.session_state.contenido)
+    ejercicios_tex = procesar_a_latex(st.session_state.ejercicios)
+
+    latex_final = f"""\\documentclass[12pt, letterpaper]{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage[spanish]{{babel}}
-\\usepackage{{amsmath, amssymb, amstfonts}}
+\\usepackage{{amsmath, amssymb, amsfonts}} % <--- CORREGIDO: amsfonts sin 't'
 \\usepackage[most]{{tcolorbox}}
 \\usepackage{{geometry}}
-\\usepackage{{graphicx}}
-
 \\geometry{{margin=1in}}
 
-% --- DEFINICIÓN DE ESTILOS (COLORES) ---
-\\newtcolorbox{{teorema_box}}{{
-    colback=blue!5!white, colframe=blue!75!black, fonttitle=\\bfseries,
-    title=✨ Teorema / Proposición, arc=4pt, outer arc=4pt
-}}
+% DEFINICIÓN DE CAJAS COLOREADAS (ESTO DA EL COLOR EN OVERLEAF)
+\\newtcolorbox{{teorema_box}}{{colback=blue!5!white, colframe=blue!75!black, arc=4pt, fontupper=\\bfseries}}
+\\newtcolorbox{{definicion_box}}{{colback=green!5!white, colframe=green!50!black, arc=4pt}}
+\\newtcolorbox{{ejercicio_box}}{{colback=orange!5!white, colframe=orange!75!black, arc=4pt}}
+\\newtcolorbox{{solucion_box}}{{colback=gray!5!white, colframe=gray!50!black, arc=4pt}}
 
-\\newtcolorbox{{definicion_box}}{{
-    colback=green!5!white, colframe=green!50!black, fonttitle=\\bfseries,
-    title=📘 Definición / Concepto, arc=4pt, outer arc=4pt
-}}
-
-\\newtcolorbox{{ejercicio_box}}{{
-    colback=orange!5!white, colframe=orange!75!black, fonttitle=\\bfseries,
-    title=📝 Ejercicio / Ejemplo, arc=4pt, outer arc=4pt
-}}
-
-\\newtcolorbox{{solucion_box}}{{
-    colback=gray!5!white, colframe=gray!50!black, fonttitle=\\bfseries,
-    title=✅ Solución, arc=4pt, outer arc=4pt
-}}
-
-% --- TÍTULO Y AUTOR ---
 \\title{{\\textbf{{{titulo_proy}}}}}
 \\author{{
     \\textbf{{{firma_line1}}} \\\\ 
     \\textit{{{firma_line2}}} \\\\
-    \\small Fecha: {fecha_actual}
+    \\small {fecha_actual}
 }}
 \\date{{}}
 
 \\begin{{document}}
-
 \\maketitle
 
 \\section{{Introducción}}
 {textos_auto['intro']}
 
-\\section{{Desarrollo Teórico}}
-% Aquí el sistema coloca el contenido procesando los bloques
-{st.session_state.contenido.replace('TEOREMA', '\\begin{teorema_box} TEOREMA').replace('DEFINICIÓN', '\\begin{definicion_box} DEFINICIÓN').replace('EJERCICIO', '\\begin{ejercicio_box} EJERCICIO')}
-% Nota: Se cierran los bloques manualmente o mediante etiquetas en el contenido
+\\section{{Contenido}}
+{cuerpo_tex}
 
-\\section{{Ejercicios y Soluciones}}
-{st.session_state.ejercicios}
+\\section{{Ejercicios}}
+{ejercicios_tex}
 
 \\section{{Conclusiones}}
-\\begin{{tcolorbox}}[colback=green!10!white, colframe=green!50!black]
+\\begin{{tcolorbox}}[colback=green!10!white, colframe=green!50!black, title=Robustas Conclusiones]
 {textos_auto['conclu']}
 \\end{{tcolorbox}}
 
 \\section{{Recomendaciones}}
-\\begin{{tcolorbox}}[colback=blue!10!white, colframe=blue!50!black]
+\\begin{{tcolorbox}}[colback=blue!10!white, colframe=blue!50!black, title=Robustas Recomendaciones]
 {textos_auto['recom']}
 \\end{{tcolorbox}}
 
 \\end{{document}}
 """
-    st.download_button("⬇️ Descargar Código LaTeX para Overleaf", latex_code, f"{titulo_proy}.tex")
+    st.download_button("⬇️ Descargar LaTeX con Estilos", latex_final, f"{titulo_proy}.tex")
