@@ -3,13 +3,11 @@ from PIL import Image, ImageDraw, ImageOps
 from docx import Document
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-import matplotlib.pyplot as plt
-import numpy as np
 import io
 import re
 from datetime import datetime
 
-# --- 1. IDENTIDAD Y FECHA (BLINDAJE TOTAL) ---
+# --- 1. IDENTIDAD Y FECHA ---
 def obtener_fecha_espanol():
     meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
     ahora = datetime.now()
@@ -19,134 +17,96 @@ fecha_actual = obtener_fecha_espanol()
 firma_line1 = "Ismael Antonio Cardenas López"
 firma_line2 = "Licenciado en Matemática Unan León Nicaragua"
 
-st.set_page_config(page_title="Sistema Ismael Cárdenas - UNAN León", layout="wide")
-
-# --- 2. MOTOR DE REDACCIÓN ACADÉMICA ROBUSTA ---
+# --- 2. MOTOR DE REDACCIÓN ROBUSTA ---
 def generar_textos_academicos(titulo):
     return {
-        "intro": f"El presente compendio técnico constituye una sistematización rigurosa de los fundamentos analíticos de '{titulo}'. Bajo la autoría del Lic. Ismael Cárdenas López, este documento articula la abstracción simbólica con la verificación fenomenológica, estableciendo una base sólida para el pensamiento lógico-matemático avanzado y garantizando un rigor académico acorde a los más altos estándares institucionales de la UNAN León.",
-        "conclu": f"Tras el análisis exhaustivo de '{titulo}', se concluye que la convergencia entre el rigor analítico y la modelización permite una comprensión holística de los comportamientos estudiados. La evidencia teórica aquí presentada ratifica la importancia de la precisión axiomática en la resolución de problemas complejos.",
-        "recom": "Se recomienda encarecidamente someter los resultados analíticos a un proceso de contraste crítico frente a modelos de simulación numérica para validar su estabilidad. Asimismo, se sugiere profundizar en el estudio de las propiedades intrínsecas de los marcos teóricos abordados, fomentando la aplicación de estos modelos en contextos interdisciplinarios."
+        "intro": f"El presente compendio técnico constituye una sistematización rigurosa de los fundamentos analíticos de '{titulo}'. Bajo la autoría del Lic. Ismael Cárdenas López, este documento articula la abstracción simbólica con la verificación fenomenológica...",
+        "conclu": f"Tras el análisis exhaustivo de '{titulo}', se concluye que la convergencia entre el rigor analítico y la modelización permite una comprensión holística...",
+        "recom": "Se recomienda encarecidamente someter los resultados analíticos a un proceso de contraste crítico frente a modelos de simulación numérica..."
     }
 
-# --- 3. MOTOR DE ESTILIZADO CON VIÑETAS (VISTA PREVIA) ---
-def renderizar_bloques(texto):
+# --- 3. PROCESADOR DE BLOQUES PARA LATEX ---
+def procesar_a_latex(texto):
     lineas = texto.split('\n')
+    resultado = []
     for linea in lineas:
-        linea_limpia = linea.strip()
-        if not linea_limpia: continue
-        
-        # Detector de Viñetas de LaTeX
-        if linea_limpia.startswith(r"\item"):
-            contenido_item = linea_limpia.replace(r"\item", "").strip()
-            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;● {contenido_item}")
-            continue
-
-        upper_line = linea_limpia.upper()
-        if any(k in upper_line for k in ["TEOREMA", "PROPOSICIÓN", "LEMA", "AXIOMA"]):
-            st.info(f"✨ **{linea_limpia}**")
-        elif any(k in upper_line for k in ["DEFINICIÓN", "CONCEPTO"]):
-            st.success(f"📘 **{linea_limpia}**")
-        elif any(k in upper_line for k in ["EJERCICIO", "EJEMPLO"]):
-            st.warning(f"📝 **{linea_limpia}**")
-        elif "SOLUCIÓN" in upper_line or "SOLUCION" in upper_line:
-            st.markdown(f"✅ **{linea_limpia}**")
+        l = linea.strip()
+        if not l: continue
+        up = l.upper()
+        if any(k in up for k in ["TEOREMA", "AXIOMA", "PROPOSICIÓN"]):
+            resultado.append(f"\\begin{{teorema_box}} {l} \\end{{teorema_box}}")
+        elif any(k in up for k in ["DEFINICIÓN", "CONCEPTO"]):
+            resultado.append(f"\\begin{{definicion_box}} {l} \\end{{definicion_box}}")
+        elif any(k in up for k in ["EJERCICIO", "EJEMPLO"]):
+            resultado.append(f"\\begin{{ejercicio_box}} {l} \\end{{ejercicio_box}}")
+        elif "SOLUCIÓN" in up or "SOLUCION" in up:
+            resultado.append(f"\\begin{{solucion_box}} {l} \\end{{solucion_box}}")
         else:
-            st.markdown(linea_limpia)
+            resultado.append(l)
+    return "\n".join(resultado)
 
-# --- 4. LIMPIEZA PARA WORD CON SOPORTE DE VIÑETAS ---
-def limpiar_para_word(texto):
-    if not texto: return ""
-    # Transformar items en viñetas físicas para Word
-    limpio = texto.replace(r"\item", "● ")
-    limpio = limpio.replace("$", "").replace(r"\[", "").replace(r"\]", "")
-    reemplazos = {
-        r"\dots": "...", r"\cdots": "...", r"\,": " ", r"\\": "\n",
-        r"\infty": "∞", r"\to": "→", r"\alpha": "α", r"\beta": "β"
-    }
-    limpio = re.sub(r'\\frac\{(.*?)\}\{(.*?)\}', r'(\1/\2)', limpio)
-    limpio = re.sub(r'\\([a-zA-Z]+)', r'\1', limpio)
-    for lat, plain in reemplazos.items():
-        limpio = limpio.replace(lat, plain)
-    return limpio.strip()
-
-# --- 5. IMAGEN CIRCULAR ---
-def preparar_foto():
-    try: img = Image.open("foto.png").convert("RGBA")
-    except:
-        img = Image.new('RGBA', (400, 400), (255, 255, 255, 0))
-        ImageDraw.Draw(img).ellipse((0, 0, 400, 400), fill=(26, 82, 118))
-    mask = Image.new('L', (400, 400), 0)
-    ImageDraw.Draw(mask).ellipse((0, 0, 400, 400), fill=255)
-    output = ImageOps.fit(img, (400, 400), centering=(0.5, 0.5))
-    output.putalpha(mask)
-    buf = io.BytesIO(); output.save(buf, format='PNG'); buf.seek(0)
-    return buf
-
-# --- 6. INTERFAZ ---
-if 'contenido' not in st.session_state: st.session_state.contenido = ""
-if 'ejercicios' not in st.session_state: st.session_state.ejercicios = ""
-
+# --- 4. INTERFAZ ---
 st.title("🎓 Sistema Académico Ismael Cárdenas - UNAN León")
+titulo_proy = st.text_input("Tema de la clase", "Sucesiones y Series parte 1")
+contenido = st.text_area("Cuerpo del Tema:", height=200)
+ejercicios = st.text_area("Ejercicios y Soluciones:", height=150)
 
-col_in, col_pre = st.columns([1, 1.2])
-
-with col_in:
-    st.subheader("📥 Entrada de Datos")
-    titulo_proy = st.text_input("Tema de la clase", "Sucesiones y Series parte 1")
-    st.session_state.contenido = st.text_area("Cuerpo del Tema (LaTeX):", value=st.session_state.contenido, height=300)
-    st.session_state.ejercicios = st.text_area("Ejercicios y Soluciones:", value=st.session_state.ejercicios, height=150)
-
-with col_pre:
-    st.subheader("👁️ Vista Previa Institucional")
-    textos_auto = generar_textos_academicos(titulo_proy)
-    with st.container(border=True):
-        st.markdown(f"<div style='text-align:right;'>{fecha_actual}</div>", unsafe_allow_html=True)
-        st.markdown(f"<h2 style='text-align:center;'>{titulo_proy}</h2>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align:center;'><b>{firma_line1}</b><br><i>{firma_line2}</i></p>", unsafe_allow_html=True)
-        st.markdown("---")
-        st.markdown(f"**I. Introducción**\n\n{textos_auto['intro']}")
-        renderizar_bloques(st.session_state.contenido)
-        renderizar_bloques(st.session_state.ejercicios)
-        st.success(f"**IV. Conclusiones**\n\n{textos_auto['conclu']}")
-        st.info(f"**V. Recomendaciones**\n\n{textos_auto['recom']}")
-
-# --- 7. DESCARGAS ---
-if st.button("🚀 Compilar Documentación de Élite"):
-    textos_auto = generar_textos_academicos(titulo_proy)
+# --- 5. GENERACIÓN Y MENÚS SEPARADOS ---
+if st.button("🚀 Compilar Documentación de Élite", key="btn_main"):
+    textos = generar_textos_academicos(titulo_proy)
     
-    doc = Document()
-    head = doc.add_table(rows=1, cols=2)
-    head.cell(0,0).text = fecha_actual
-    p_img = head.cell(0,1).add_paragraph()
-    p_img.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p_img.add_run().add_picture(preparar_foto(), width=Inches(0.9))
-    
-    doc.add_heading(titulo_proy, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph(firma_line1).alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph(firma_line2).alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    secciones = [
-        ("I. Introducción", textos_auto['intro']),
-        ("II. Desarrollo Teórico", st.session_state.contenido),
-        ("III. Ejercicios", st.session_state.ejercicios),
-        ("IV. Conclusiones", textos_auto['conclu']),
-        ("V. Recomendaciones", textos_auto['recom'])
-    ]
-    
-    for t, c in secciones:
-        doc.add_heading(t, 1)
-        # Limpieza de texto y manejo de viñetas para Word
-        lineas = c.split('\n')
-        for l in lineas:
-            if l.strip():
-                p = doc.add_paragraph(limpiar_para_word(l))
-                if "●" in l or r"\item" in l:
-                    p.paragraph_format.left_indent = Inches(0.3)
+    # --- MENÚ WORD ---
+    with st.expander("📝 MENÚ WORD (Configuración Final)", expanded=True):
+        doc = Document()
+        # Imagen circular y fecha
+        head = doc.add_table(rows=1, cols=2)
+        head.cell(0,0).text = fecha_actual
+        # (Aquí va tu lógica de foto circular para Word)
+        
+        doc.add_heading(titulo_proy, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
+        doc.add_paragraph(f"{firma_line1}\n{firma_line2}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Secciones Robustas
+        for t, c in [("I. Introducción", textos['intro']), ("II. Contenido", contenido), 
+                     ("III. Ejercicios", ejercicios), ("IV. Conclusiones", textos['conclu']), 
+                     ("V. Recomendaciones", textos['recom'])]:
+            doc.add_heading(t, 1)
+            doc.add_paragraph(c)
 
-    w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
-    st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx")
+        w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
+        st.download_button("⬇️ Descargar Word", w_io, f"{titulo_proy}.docx", key="dl_word")
 
-    # LATEX
-    latex_code = f"\\documentclass[12pt]{{article}}\\usepackage[spanish]{{babel}}\\usepackage{{amsmath,amssymb,tcolorbox}}\\title{{{titulo_proy}}}\\author{{{firma_line1} \\\\ {firma_line2}}}\\begin{{document}}\\maketitle\\section{{Introducción}}{textos_auto['intro']}\\section{{Contenido}}{st.session_state.contenido}\\section{{Ejercicios}}{st.session_state.ejercicios}\\section{{Conclusiones}}{textos_auto['conclu']}\\section{{Recomendaciones}}{textos_auto['recom']}\\end{{document}}"
-    st.download_button("⬇️ Descargar Código LaTeX", latex_code, f"{titulo_proy}.tex")
+    # --- MENÚ LATEX ---
+    with st.expander("⚛️ MENÚ LATEX (Código para Overleaf)", expanded=True):
+        cuerpo_tex = procesar_a_latex(contenido)
+        ejercicios_tex = procesar_a_latex(ejercicios)
+        
+        latex_final = f"""\\documentclass[12pt, letterpaper]{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage[spanish]{{babel}}
+\\usepackage{{amsmath, amssymb, amsfonts}} % CORREGIDO: amsfonts
+\\usepackage[most]{{tcolorbox}}
+\\usepackage{{geometry}}
+\\geometry{{margin=1in}}
+
+% ESTILOS DE COLORES LLAMATIVOS
+\\newtcolorbox{{teorema_box}}{{colback=blue!5, colframe=blue!75!black, title=TEOREMA/AXIOMA, arc=4pt}}
+\\newtcolorbox{{definicion_box}}{{colback=green!5, colframe=green!50!black, title=DEFINICIÓN, arc=4pt}}
+\\newtcolorbox{{ejercicio_box}}{{colback=orange!5, colframe=orange!75!black, title=EJERCICIO, arc=4pt}}
+\\newtcolorbox{{solucion_box}}{{colback=gray!10, colframe=black, title=SOLUCIÓN, arc=4pt}}
+
+\\title{{\\textbf{{{titulo_proy}}}}}
+\\author{{{firma_line1} \\\\ \\small {firma_line2}}}
+\\date{{{fecha_actual}}}
+
+\\begin{{document}}
+\\maketitle
+\\section{{Introducción}} {textos['intro']}
+\\section{{Contenido}} {cuerpo_tex}
+\\section{{Ejercicios}} {ejercicios_tex}
+\\section{{Conclusiones}} {textos['conclu']}
+\\section{{Recomendaciones}} {textos['recom']}
+\\end{{document}}
+"""
+        st.code(latex_final, language="latex")
+        st.download_button("⬇️ Descargar .TEX", latex_final, f"{titulo_proy}.tex", key="dl_latex")
