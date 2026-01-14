@@ -3,120 +3,117 @@ from PIL import Image, ImageDraw, ImageOps
 import io
 import re
 from datetime import datetime
+from fpdf import FPDF # Librería para generar el PDF
 
-# --- 1. IDENTIDAD Y CONFIGURACIÓN (INVICTO CONTRA ERRORES) ---
-def obtener_fecha_espanol():
+# --- 1. CONFIGURACIÓN DE IDENTIDAD Y FECHA ---
+def obtener_fecha():
     meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
     ahora = datetime.now()
     return f"{ahora.day} de {meses.get(ahora.strftime('%B'))}, {ahora.year}"
 
-# Variables estables para evitar NameError y SyntaxError
-FECHA_HOY = obtener_fecha_espanol()
-NOMBRE_AUTOR = "Ismael Antonio Cardenas López"
-CARGO_AUTOR = "Licenciado en Matemática Unan León Nicaragua"
+FECHA_TEXTO = obtener_fecha()
+AUTOR = "Ismael Antonio Cardenas López"
+INFO_AUTOR = "Licenciado en Matemática Unan León Nicaragua"
 
-st.set_page_config(page_title="Sistema Ismael Cárdenas - UNAN", layout="wide")
+st.set_page_config(page_title="Sistema Ismael Cárdenas", layout="wide")
 
-# --- 2. MOTOR DE REDACCIÓN ACADÉMICA AUTOMÁTICA ---
-def generar_prosa_profesional(titulo):
-    return {
-        "intro": f"El presente compendio técnico sobre '{titulo}' constituye una sistematización rigurosa de los fundamentos analíticos de la materia. Bajo la autoría del Lic. Ismael Cárdenas López, este documento formaliza los conceptos mediante un lenguaje axiomático preciso para la UNAN León.",
-        "conclu": "Se ratifica que la estructuración lógica de los contenidos expuestos permite una resolución eficaz de problemas complejos. La rigurosidad analítica aquí presentada es la base para el desarrollo del pensamiento matemático avanzado.",
-        "recom": "Se recomienda profundizar en la revisión de los marcos teóricos aquí abordados y aplicar estos modelos en entornos de investigación interdisciplinaria."
-    }
+# --- 2. CLASE PARA GENERAR EL PDF ELEGANTE ---
+class PDF(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 10)
+        self.cell(0, 10, f'Fecha: {FECHA_TEXTO}', 0, 1, 'R')
+        self.ln(5)
 
-# --- 3. MOTOR DE ESTILIZADO ROBUSTO (CUADROS Y VIÑETAS) ---
-def renderizar_todo_elegante(texto):
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+
+# --- 3. MOTOR DE RENDERIZADO (VISTA PREVIA) ---
+def mostrar_contenido_estilizado(texto):
     if not texto: return
     lineas = texto.split('\n')
     for linea in lineas:
         l = linea.strip()
         if not l: continue
         
-        # A. DETECCIÓN DE VIÑETAS (Listas elegantes)
-        if l.startswith(('-', '*', '•')) or re.match(r'^[a-z|0-9]\.', l):
+        # Detección de Viñetas
+        if l.startswith(('-', '*', '•')) or re.match(r'^[0-9|a-z]\.', l):
             st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;◈ {l.lstrip('-*•')}")
             continue
 
-        # B. CUADROS DE LIBRO (Teoremas, Definiciones, Ejercicios)
+        # Cuadros Académicos
         up = l.upper()
         if any(k in up for k in ["TEOREMA", "PROPOSICIÓN"]):
-            st.info(f"📜 **{l}**") # Cuadro Azul
+            st.info(f"📜 **{l}**")
         elif any(k in up for k in ["DEFINICIÓN", "CONCEPTO"]):
-            st.success(f"📘 **{l}**") # Cuadro Verde
+            st.success(f"📘 **{l}**")
         elif any(k in up for k in ["EJERCICIO", "EJEMPLO"]):
-            st.warning(f"✏️ **{l}**") # Cuadro Naranja
-        elif "SOLUCIÓN" in up:
-            st.markdown(f"✅ **{l}**")
+            st.warning(f"✏️ **{l}**")
         else:
-            # C. RENDERIZADO DE MATEMÁTICAS (Limpio)
-            if "$" in l:
-                st.latex(l.replace("$", ""))
-            else:
-                st.write(l)
+            if "$" in l: st.latex(l.replace("$", ""))
+            else: st.write(l)
 
-# --- 4. INTERFAZ ---
-st.title("🎓 Compilador Académico Ismael Cárdenas")
+# --- 4. INTERFAZ PRINCIPAL ---
+st.title("🎓 Sistema de Compilación Académica - UNAN León")
 
-if 'desarrollo' not in st.session_state: st.session_state.desarrollo = ""
-if 'ejercicios' not in st.session_state: st.session_state.ejercicios = ""
+if 'txt_teoria' not in st.session_state: st.session_state.txt_teoria = ""
+if 'txt_ejercicios' not in st.session_state: st.session_state.txt_ejercicios = ""
 
-col_in, col_pre = st.columns([1, 1.2])
+col_izq, col_der = st.columns([1, 1.2])
 
-with col_in:
-    st.subheader("📥 Panel de Datos")
-    titulo_tema = st.text_input("Tema de la clase:", "Sucesiones y Series parte 1")
-    st.session_state.desarrollo = st.text_area("Contenido Teórico (LaTeX):", value=st.session_state.desarrollo, height=350)
-    st.session_state.ejercicios = st.text_area("Sección de Práctica:", value=st.session_state.ejercicios, height=150)
+with col_izq:
+    st.subheader("📥 Insumos del Documento")
+    tema = st.text_input("Título del Tema:", "Sucesiones y Series parte 1")
+    st.session_state.txt_teoria = st.text_area("Contenido Teórico:", value=st.session_state.txt_teoria, height=300)
+    st.session_state.txt_ejercicios = st.text_area("Sección de Ejercicios:", value=st.session_state.txt_ejercicios, height=150)
 
-with col_pre:
-    st.subheader("👁️ Vista Previa Estilo Libro")
-    textos_auto = generar_prosa_profesional(titulo_tema)
+with col_der:
+    st.subheader("👁️ Vista Previa Institucional")
     with st.container(border=True):
-        st.markdown(f"<div style='text-align:right;'>{FECHA_HOY}</div>", unsafe_allow_html=True)
-        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{titulo_tema}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align:center;'><b>{NOMBRE_AUTOR}</b><br><i>{CARGO_AUTOR}</i></p>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:right;'>{FECHA_TEXTO}</div>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align:center; color:#1A5276;'>{tema}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center;'><b>{AUTOR}</b><br><i>{INFO_AUTOR}</i></p>", unsafe_allow_html=True)
         st.markdown("---")
+        mostrar_contenido_estilizado(st.session_state.txt_teoria)
+        mostrar_contenido_estilizado(st.session_state.txt_ejercicios)
+
+# --- 5. GENERACIÓN DE ARCHIVOS (PDF, LATEX) ---
+st.markdown("### 🚀 Exportar Documentación")
+c1, c2 = st.columns(2)
+
+with c1:
+    if st.button("📄 Generar y Descargar PDF"):
+        pdf = PDF()
+        pdf.add_page()
+        # Título y Autor
+        pdf.set_font('Arial', 'B', 16)
+        pdf.cell(0, 10, tema, 0, 1, 'C')
+        pdf.set_font('Arial', '', 12)
+        pdf.cell(0, 10, AUTOR, 0, 1, 'C')
+        pdf.set_font('Arial', 'I', 10)
+        pdf.cell(0, 10, INFO_AUTOR, 0, 1, 'C')
+        pdf.ln(10)
+        # Contenido
+        pdf.set_font('Arial', '', 11)
+        pdf.multi_cell(0, 10, st.session_state.txt_teoria + "\n" + st.session_state.txt_ejercicios)
         
-        st.markdown(f"### I. Introducción\n{textos_auto['intro']}")
-        renderizar_todo_elegante(st.session_state.desarrollo)
-        renderizar_todo_elegante(st.session_state.ejercicios)
-        st.markdown(f"### IV. Conclusiones\n{textos_auto['conclu']}")
+        pdf_output = pdf.output(dest='S').encode('latin-1', 'ignore')
+        st.download_button("⬇️ Descargar PDF Final", data=pdf_output, file_name=f"{tema}.pdf", mime="application/pdf")
 
-# --- 5. GENERADOR DE CÓDIGO LATEX (FIERROS COMPLETOS) ---
-if st.button("🚀 Compilar Código LaTeX de Élite"):
-    textos_auto = generar_prosa_profesional(titulo_tema)
-    
-    # Construcción por bloques para evitar error de llaves
-    preambulo = r"""\documentclass[12pt, letterpaper]{article}
-\usepackage[spanish]{babel}
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath, amssymb, amsthm, amsfonts, tcolorbox, geometry}
-\geometry{margin=1in}
-\newtcolorbox{estilo_libro}[2]{colback=#1!5!white,colframe=#1!75!black,fonttitle=\bfseries,title=#2}
-"""
-    cuerpo = f"""\\begin{{document}}
-\\begin{{flushright}} {FECHA_HOY} \\end{{flushright}}
-\\begin{{center}}
-    {{\\Huge \\textbf{{{titulo_tema}}}}} \\\\[0.5cm]
-    {{\\large \\textbf{{{NOMBRE_AUTOR}}} \\\\ \\textit{{{CARGO_AUTOR}}}}}
-\\end{{center}}
-
-\\section{{Introducción}}
-{textos_auto['intro']}
-
-\\section{{Desarrollo}}
-{st.session_state.desarrollo}
-
+with c2:
+    # Código LaTeX blindado (usando % para escapar llaves si es necesario)
+    latex_code = f"""\\documentclass[12pt]{{article}}
+\\usepackage[spanish]{{babel}}
+\\usepackage{{amsmath, amssymb, tcolorbox}}
+\\title{{{tema}}}
+\\author{{{AUTOR} \\\\ \\small {INFO_AUTOR}}}
+\\date{{{FECHA_TEXTO}}}
+\\begin{{document}}
+\\maketitle
+\\section{{Contenido}}
+{st.session_state.txt_teoria}
 \\section{{Ejercicios}}
-{st.session_state.ejercicios}
-
-\\section{{Conclusiones}}
-{textos_auto['conclu']}
-
+{st.session_state.txt_ejercicios}
 \\end{{document}}"""
-
-    latex_final = preambulo + cuerpo
-    st.download_button("⬇️ Descargar .tex", latex_final, f"{titulo_tema}.tex")
-    st.code(latex_final, language='latex')
-    st.success("¡Documento listo para Overleaf!")
+    st.download_button("⬇️ Descargar Código .tex", latex_code, file_name=f"{tema}.tex")
