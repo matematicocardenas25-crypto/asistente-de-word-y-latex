@@ -148,35 +148,54 @@ if st.button("🚀 Compilar Documentación de Élite"):
     st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx")
 
     # LATEX
-# --- 7. DESCARGAS (SIN ERRORES DE ID NI DE PAQUETES) ---
-if st.button("🚀 Compilar Documentación de Élite"):
+# --- 7. DESCARGAS (ESTRUCTURA DE ÉLITE SIN ERRORES) ---
+if st.button("🚀 Compilar Documentación de Élite", key="principal_compiler"):
     textos_auto = generar_textos_academicos(titulo_proy)
     
-    # --- 7a. LÓGICA DE WORD (Se mantiene igual) ---
+    # 7a. Generación de Word (Manteniendo tu estructura)
     doc = Document()
-    # ... (aquí va tu código actual para generar el Word) ...
-    # Asegúrate de que el bloque de Word termine con el st.download_button de abajo
+    # Encabezado con fecha y foto circular
+    head = doc.add_table(rows=1, cols=2)
+    head.cell(0,0).text = fecha_actual
+    p_img = head.cell(0,1).add_paragraph()
+    p_img.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p_img.add_run().add_picture(preparar_foto(), width=Inches(0.9))
     
-    w_io = io.BytesIO()
-    doc.save(w_io)
-    w_io.seek(0)
+    doc.add_heading(titulo_proy, 0).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{firma_line1}\n{firma_line2}").alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # Botón Word con KEY única
-    st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx", key="btn_word")
+    secciones = [
+        ("I. Introducción", textos_auto['intro']),
+        ("II. Desarrollo Teórico", st.session_state.contenido),
+        ("III. Ejercicios", st.session_state.ejercicios),
+        ("IV. Conclusiones", textos_auto['conclu']),
+        ("V. Recomendaciones", textos_auto['recom'])
+    ]
+    
+    for t, c in secciones:
+        doc.add_heading(t, 1)
+        for l in c.split('\n'):
+            if l.strip():
+                p = doc.add_paragraph(limpiar_para_word(l))
+                if "●" in l or r"\item" in l: p.paragraph_format.left_indent = Inches(0.3)
 
-    # --- 7b. LÓGICA DE LATEX (CORREGIDA) ---
+    w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
+    # BOTÓN WORD CON KEY ÚNICA
+    st.download_button("⬇️ Descargar Word", w_io, f"{titulo_proy}.docx", key="dw_word")
+
+    # 7b. Generación de LaTeX (Con paquetes correctos y cajas de colores)
     cuerpo_tex = procesar_a_latex(st.session_state.contenido)
     ejercicios_tex = procesar_a_latex(st.session_state.ejercicios)
 
     latex_final = f"""\\documentclass[12pt, letterpaper]{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage[spanish]{{babel}}
-\\usepackage{{amsmath, amssymb, amsfonts}} % CORREGIDO amsfonts
+\\usepackage{{amsmath, amssymb, amsfonts}} % amsfonts corregido
 \\usepackage[most]{{tcolorbox}}
 \\usepackage{{geometry}}
 \\geometry{{margin=1in}}
 
-% DEFINICIÓN DE CAJAS
+% DEFINICIÓN DE ESTILOS INSTITUCIONALES
 \\newtcolorbox{{teorema_box}}{{colback=blue!5!white, colframe=blue!75!black, arc=4pt, fontupper=\\bfseries}}
 \\newtcolorbox{{definicion_box}}{{colback=green!5!white, colframe=green!50!black, arc=4pt}}
 \\newtcolorbox{{ejercicio_box}}{{colback=orange!5!white, colframe=orange!75!black, arc=4pt}}
@@ -192,23 +211,23 @@ if st.button("🚀 Compilar Documentación de Élite"):
 \\section{{Introducción}}
 {textos_auto['intro']}
 
-\\section{{Contenido}}
+\\section{{Desarrollo Teórico}}
 {cuerpo_tex}
 
-\\section{{Ejercicios}}
+\\section{{Ejercicios y Soluciones}}
 {ejercicios_tex}
 
 \\section{{Conclusiones}}
-\\begin{{tcolorbox}}[colback=green!10!white, colframe=green!50!black, title=Conclusiones]
+\\begin{{tcolorbox}}[colback=green!10!white, colframe=green!50!black, title=Robustas Conclusiones]
 {textos_auto['conclu']}
 \\end{{tcolorbox}}
 
 \\section{{Recomendaciones}}
-\\begin{{tcolorbox}}[colback=blue!10!white, colframe=blue!50!black, title=Recomendaciones]
+\\begin{{tcolorbox}}[colback=blue!10!white, colframe=blue!50!black, title=Robustas Recomendaciones]
 {textos_auto['recom']}
 \\end{{tcolorbox}}
 
 \\end{{document}}
 """
-    # Botón LaTeX con KEY única para evitar el DuplicateElementId
-    st.download_button("⬇️ Descargar Código LaTeX", latex_final, f"{titulo_proy}.tex", key="btn_latex")
+    # BOTÓN LATEX CON KEY ÚNICA
+    st.download_button("⬇️ Descargar LaTeX", latex_final, f"{titulo_proy}.tex", key="dw_latex")
