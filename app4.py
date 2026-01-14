@@ -9,62 +9,63 @@ import io
 import re
 from datetime import datetime
 
-# --- 1. IDENTIDAD Y FECHA (BLINDAJE TOTAL CONTRA NAMEERROR) ---
+# --- 1. IDENTIDAD Y FECHA (BLINDAJE TOTAL) ---
 def obtener_fecha_espanol():
     meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
     ahora = datetime.now()
     return f"{ahora.day} de {meses.get(ahora.strftime('%B'))}, {ahora.year}"
 
 fecha_actual = obtener_fecha_espanol()
-# Variables globales para que nunca fallen en la vista previa
 firma_line1 = "Ismael Antonio Cardenas López"
 firma_line2 = "Licenciado en Matemática Unan León Nicaragua"
 
 st.set_page_config(page_title="Sistema Ismael Cárdenas - UNAN León", layout="wide")
 
-# --- 2. MOTOR DE REDACCIÓN ACADÉMICA AUTOMATIZADA (ROBUSTO) ---
+# --- 2. MOTOR DE REDACCIÓN ACADÉMICA ROBUSTA ---
 def generar_textos_academicos(titulo):
-    """Genera automáticamente textos profesionales basados en el tema."""
     return {
-        "intro": f"El presente documento técnico aborda de manera sistemática los fundamentos analíticos de '{titulo}'. La finalidad de este compendio es articular los conceptos axiomáticos con sus aplicaciones prácticas, estableciendo un marco teórico riguroso que facilite la comprensión de las estructuras matemáticas involucradas bajo los estándares académicos de la UNAN León.",
-        "conclu": f"Tras el análisis exhaustivo de '{titulo}', se concluye que la correcta aplicación de los métodos expuestos garantiza una resolución eficaz de problemas complejos. La convergencia entre la teoría purista y la práctica aplicada resulta esencial para la validación de los resultados obtenidos en este estudio.",
-        "recom": "Se recomienda encarecidamente la revisión periódica de los marcos conceptuales aquí presentados para mantener la precisión en la modelización. Asimismo, se sugiere integrar estas metodologías en entornos de investigación interdisciplinaria para potenciar el alcance del análisis matemático."
+        "intro": f"El presente compendio técnico constituye una sistematización rigurosa de los fundamentos analíticos de '{titulo}'. Bajo la autoría del Lic. Ismael Cárdenas López, este documento articula la abstracción simbólica con la verificación fenomenológica, estableciendo una base sólida para el pensamiento lógico-matemático avanzado y garantizando un rigor académico acorde a los más altos estándares institucionales de la UNAN León.",
+        "conclu": f"Tras el análisis exhaustivo de '{titulo}', se concluye que la convergencia entre el rigor analítico y la modelización permite una comprensión holística de los comportamientos estudiados. La evidencia teórica aquí presentada ratifica la importancia de la precisión axiomática en la resolución de problemas complejos.",
+        "recom": "Se recomienda encarecidamente someter los resultados analíticos a un proceso de contraste crítico frente a modelos de simulación numérica para validar su estabilidad. Asimismo, se sugiere profundizar en el estudio de las propiedades intrínsecas de los marcos teóricos abordados, fomentando la aplicación de estos modelos en contextos interdisciplinarios."
     }
 
-# --- 3. MOTOR DE ESTILIZADO (CUADROS ELEGANTES EN VISTA PREVIA) ---
+# --- 3. MOTOR DE ESTILIZADO CON VIÑETAS (VISTA PREVIA) ---
 def renderizar_bloques(texto):
     lineas = texto.split('\n')
     for linea in lineas:
-        if not linea.strip(): continue
-        upper_line = linea.upper()
-        if any(k in upper_line for k in ["TEOREMA", "PROPOSICIÓN", "LEMA"]):
-            st.info(f"✨ **{linea}**")
-        elif any(k in upper_line for k in ["DEFINICIÓN", "CONCEPTO"]):
-            st.success(f"📘 **{linea}**")
-        elif any(k in upper_line for k in ["EJERCICIO", "EJEMPLO"]):
-            st.warning(f"📝 **{linea}**")
-        elif "SOLUCIÓN" in upper_line:
-            st.markdown(f"✅ **{linea}**")
-        else:
-            st.markdown(linea)
+        linea_limpia = linea.strip()
+        if not linea_limpia: continue
+        
+        # Detector de Viñetas de LaTeX
+        if linea_limpia.startswith(r"\item"):
+            contenido_item = linea_limpia.replace(r"\item", "").strip()
+            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;● {contenido_item}")
+            continue
 
-# --- 4. LIMPIEZA TOTAL PARA WORD (CAPTURA DE ERRORES DE SÍMBOLOS) ---
+        upper_line = linea_limpia.upper()
+        if any(k in upper_line for k in ["TEOREMA", "PROPOSICIÓN", "LEMA", "AXIOMA"]):
+            st.info(f"✨ **{linea_limpia}**")
+        elif any(k in upper_line for k in ["DEFINICIÓN", "CONCEPTO"]):
+            st.success(f"📘 **{linea_limpia}**")
+        elif any(k in upper_line for k in ["EJERCICIO", "EJEMPLO"]):
+            st.warning(f"📝 **{linea_limpia}**")
+        elif "SOLUCIÓN" in upper_line or "SOLUCION" in upper_line:
+            st.markdown(f"✅ **{linea_limpia}**")
+        else:
+            st.markdown(linea_limpia)
+
+# --- 4. LIMPIEZA PARA WORD CON SOPORTE DE VIÑETAS ---
 def limpiar_para_word(texto):
     if not texto: return ""
-    # Eliminar símbolos de LaTeX que ensucian el Word
-    limpio = texto.replace("$", "").replace(r"\[", "").replace(r"\]", "")
+    # Transformar items en viñetas físicas para Word
+    limpio = texto.replace(r"\item", "● ")
+    limpio = limpio.replace("$", "").replace(r"\[", "").replace(r"\]", "")
     reemplazos = {
         r"\dots": "...", r"\cdots": "...", r"\,": " ", r"\\": "\n",
-        r"\left\{": "{", r"\right\}": "}", r"\left(": "(", r"\right)": ")",
         r"\infty": "∞", r"\to": "→", r"\alpha": "α", r"\beta": "β"
     }
-    # Fracciones: \frac{a}{b} -> (a/b)
     limpio = re.sub(r'\\frac\{(.*?)\}\{(.*?)\}', r'(\1/\2)', limpio)
-    # Quitar barras invertidas residuales \palabra -> palabra
     limpio = re.sub(r'\\([a-zA-Z]+)', r'\1', limpio)
-    # Quitar llaves de exponentes/subíndices
-    limpio = limpio.replace("{", "").replace("}", "")
-    
     for lat, plain in reemplazos.items():
         limpio = limpio.replace(lat, plain)
     return limpio.strip()
@@ -86,7 +87,7 @@ def preparar_foto():
 if 'contenido' not in st.session_state: st.session_state.contenido = ""
 if 'ejercicios' not in st.session_state: st.session_state.ejercicios = ""
 
-st.title("🎓 Sistema Académico Ismael Cárdenas - UNAN")
+st.title("🎓 Sistema Académico Ismael Cárdenas - UNAN León")
 
 col_in, col_pre = st.columns([1, 1.2])
 
@@ -104,16 +105,16 @@ with col_pre:
         st.markdown(f"<h2 style='text-align:center;'>{titulo_proy}</h2>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align:center;'><b>{firma_line1}</b><br><i>{firma_line2}</i></p>", unsafe_allow_html=True)
         st.markdown("---")
-        st.info(f"**I. Introducción (Generada):**\n{textos_auto['intro']}")
+        st.markdown(f"**I. Introducción**\n\n{textos_auto['intro']}")
         renderizar_bloques(st.session_state.contenido)
         renderizar_bloques(st.session_state.ejercicios)
-        st.success(f"**IV. Conclusiones:**\n{textos_auto['conclu']}")
+        st.success(f"**IV. Conclusiones**\n\n{textos_auto['conclu']}")
+        st.info(f"**V. Recomendaciones**\n\n{textos_auto['recom']}")
 
 # --- 7. DESCARGAS ---
 if st.button("🚀 Compilar Documentación de Élite"):
     textos_auto = generar_textos_academicos(titulo_proy)
     
-    # WORD
     doc = Document()
     head = doc.add_table(rows=1, cols=2)
     head.cell(0,0).text = fecha_actual
@@ -135,10 +136,17 @@ if st.button("🚀 Compilar Documentación de Élite"):
     
     for t, c in secciones:
         doc.add_heading(t, 1)
-        doc.add_paragraph(limpiar_para_word(c))
+        # Limpieza de texto y manejo de viñetas para Word
+        lineas = c.split('\n')
+        for l in lineas:
+            if l.strip():
+                p = doc.add_paragraph(limpiar_para_word(l))
+                if "●" in l or r"\item" in l:
+                    p.paragraph_format.left_indent = Inches(0.3)
 
     w_io = io.BytesIO(); doc.save(w_io); w_io.seek(0)
     st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx")
 
-    # LATEX (PARA OVERLEAF)
-    latex_code = f"\\documentclass[12pt]{{article}}\\usepackage[spanish]{{babel}}\\usepackage{{amsmath,amssymb,tcolorbox}}\\title{{{titulo_proy}}}\\author{{{firma_line1}}}\\begin{{document}}\\maketitle\\section{{Introducción}}{textos_auto['intro']}\\section{{Contenido}}{st.session_state.contenido}\\section{{Ejercicios}}{st.session_state.ejercicios}\\section{{Conclusiones}}{textos_auto['conclu']}\\end{{document}}"
+    # LATEX
+    latex_code = f"\\documentclass[12pt]{{article}}\\usepackage[spanish]{{babel}}\\usepackage{{amsmath,amssymb,tcolorbox}}\\title{{{titulo_proy}}}\\author{{{firma_line1} \\\\ {firma_line2}}}\\begin{{document}}\\maketitle\\section{{Introducción}}{textos_auto['intro']}\\section{{Contenido}}{st.session_state.contenido}\\section{{Ejercicios}}{st.session_state.ejercicios}\\section{{Conclusiones}}{textos_auto['conclu']}\\section{{Recomendaciones}}{textos_auto['recom']}\\end{{document}}"
+    st.download_button("⬇️ Descargar Código LaTeX", latex_code, f"{titulo_proy}.tex")
