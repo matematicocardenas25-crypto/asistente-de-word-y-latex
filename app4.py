@@ -148,35 +148,43 @@ if st.button("🚀 Compilar Documentación de Élite"):
     st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx")
 
     # LATEX
-# --- 7. DESCARGAS (VERSION CORREGIDA SIN ERRORES DE PAQUETES) ---
+# --- 7. DESCARGAS (SIN ERRORES DE ID NI DE PAQUETES) ---
 if st.button("🚀 Compilar Documentación de Élite"):
     textos_auto = generar_textos_academicos(titulo_proy)
     
-    # Procesamiento de bloques
+    # --- 7a. LÓGICA DE WORD (Se mantiene igual) ---
+    doc = Document()
+    # ... (aquí va tu código actual para generar el Word) ...
+    # Asegúrate de que el bloque de Word termine con el st.download_button de abajo
+    
+    w_io = io.BytesIO()
+    doc.save(w_io)
+    w_io.seek(0)
+    
+    # Botón Word con KEY única
+    st.download_button("⬇️ Descargar Word (Limpio)", w_io, f"{titulo_proy}.docx", key="btn_word")
+
+    # --- 7b. LÓGICA DE LATEX (CORREGIDA) ---
     cuerpo_tex = procesar_a_latex(st.session_state.contenido)
     ejercicios_tex = procesar_a_latex(st.session_state.ejercicios)
 
     latex_final = f"""\\documentclass[12pt, letterpaper]{{article}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage[spanish]{{babel}}
-\\usepackage{{amsmath, amssymb, amsfonts}} % <--- CORREGIDO: amsfonts sin 't'
+\\usepackage{{amsmath, amssymb, amsfonts}} % CORREGIDO amsfonts
 \\usepackage[most]{{tcolorbox}}
 \\usepackage{{geometry}}
 \\geometry{{margin=1in}}
 
-% DEFINICIÓN DE CAJAS COLOREADAS (ESTO DA EL COLOR EN OVERLEAF)
+% DEFINICIÓN DE CAJAS
 \\newtcolorbox{{teorema_box}}{{colback=blue!5!white, colframe=blue!75!black, arc=4pt, fontupper=\\bfseries}}
 \\newtcolorbox{{definicion_box}}{{colback=green!5!white, colframe=green!50!black, arc=4pt}}
 \\newtcolorbox{{ejercicio_box}}{{colback=orange!5!white, colframe=orange!75!black, arc=4pt}}
 \\newtcolorbox{{solucion_box}}{{colback=gray!5!white, colframe=gray!50!black, arc=4pt}}
 
 \\title{{\\textbf{{{titulo_proy}}}}}
-\\author{{
-    \\textbf{{{firma_line1}}} \\\\ 
-    \\textit{{{firma_line2}}} \\\\
-    \\small {fecha_actual}
-}}
-\\date{{}}
+\\author{{\\textbf{{{firma_line1}}} \\\\ \\textit{{{firma_line2}}}}}
+\\date{{{fecha_actual}}}
 
 \\begin{{document}}
 \\maketitle
@@ -191,15 +199,16 @@ if st.button("🚀 Compilar Documentación de Élite"):
 {ejercicios_tex}
 
 \\section{{Conclusiones}}
-\\begin{{tcolorbox}}[colback=green!10!white, colframe=green!50!black, title=Robustas Conclusiones]
+\\begin{{tcolorbox}}[colback=green!10!white, colframe=green!50!black, title=Conclusiones]
 {textos_auto['conclu']}
 \\end{{tcolorbox}}
 
 \\section{{Recomendaciones}}
-\\begin{{tcolorbox}}[colback=blue!10!white, colframe=blue!50!black, title=Robustas Recomendaciones]
+\\begin{{tcolorbox}}[colback=blue!10!white, colframe=blue!50!black, title=Recomendaciones]
 {textos_auto['recom']}
 \\end{{tcolorbox}}
 
 \\end{{document}}
 """
-    st.download_button("⬇️ Descargar LaTeX con Estilos", latex_final, f"{titulo_proy}.tex")
+    # Botón LaTeX con KEY única para evitar el DuplicateElementId
+    st.download_button("⬇️ Descargar Código LaTeX", latex_final, f"{titulo_proy}.tex", key="btn_latex")
